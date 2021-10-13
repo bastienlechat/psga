@@ -58,7 +58,7 @@ def edf_what_channels(folder):
 
 class PSGedf(PSGbase):
     """
-    Class to read edf files and instantiate PSG_base
+    Class to read edf files.
     """
 
     def __init__(self, folder):
