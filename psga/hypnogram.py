@@ -46,18 +46,14 @@ class Hypnogram(object):
 def _convert_hypno(stages, windows_length):
     if stages['duration'].values[0] != windows_length:
         labels = stages['label'].values
-
         if stages['duration'].values[0] % windows_length == 0:
             repeat_number = stages['duration'].values[0] / windows_length
         else:
             raise ValueError('Analysis windows length needs to be a multiple of sleep stage length')
-
         St = pd.DataFrame([])
         St['label'] = np.repeat(labels, repeat_number)
-
         dur = np.ones_like(St['label'].values) * windows_length
         St['duration'] = dur
-
         St['onset'] = np.cumsum(St['duration'].values) + stages['onset'].values[0]\
                       - windows_length
     else:
