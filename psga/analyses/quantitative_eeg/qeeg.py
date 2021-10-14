@@ -1,3 +1,49 @@
+"""
+
+This modules performs spectral analysis of EEG signals (sometimes
+refered as quantitative EEG) on a mne object. EEG Sleep EEG is ideally suited
+to frequency and time-frequency analysis, since different stages or
+micro-elements (such as spindles, K-complexes, slow waves) have
+specific frequency characteristics [1].
+
+Three spectral analysis methods can be used for the analysis, Fast Fourier
+transform, Welch and Multitaper spectrogram. Multitaper estimation tends to
+be slightly better in reducing artefactual noise and is thus prefered. For an
+in depth application of Multitaper analysis to EEG signals, please see [2].
+
+This module can also be used to summarised spectral quantities overnight. For
+example, absolute delta power can be calculated in each sleep stages. More
+experimental metrics, such as spectral entropy of delta activity across the
+night [2], are also implemented.
+
+The code below has been also used to analyse event-related changes in EEG.
+The following publications have used part of this code [3,4], and we refer
+interested reader to this publication for further details on implementation
+technicals.
+
+[1] Lechat, B., Scott, H., Naik, G. et al (2021). New and Emerging Approaches
+to Better Define Sleep Disruption and Its Consequences.
+Frontiers in Neuroscience, 15. doi:10.3389/fnins.2021.751730
+
+[2] Prerau, M. J., Brown, R. E., Bianchi, M. T., Ellenbogen, J. M., & Purdon,
+P. L. (2017). Sleep Neurophysiological Dynamics Through the Lens of
+Multitaper Spectral Analysis. Physiology (Bethesda), 32(1),
+60-92. doi:10.1152/physiol.00062.2015
+
+[3] TBA
+
+[4] Scott, H., Lechat, B., Lovato, N., & Lack, L. (2020).
+Correspondence between physiological and behavioural responses
+to vibratory stimuli during the sleep onset period: A quantitative
+electroencephalography analysis. J Sleep Res, e13232. doi:10.1111/jsr.13232
+
+[5] Sweetman, A., Lechat, B., Catcheside, P. G. et al. (2021). Polysomnographic
+Predictors of Treatment Response to Cognitive Behavioral Therapy for
+Insomnia in Participants With Co-morbid Insomnia and Sleep Apnea:
+Secondary Analysis of a Randomized Controlled Trial.
+Frontiers in Psychology, 12. doi:10.3389/fpsyg.2021.676763
+"""
+
 import mne
 import os
 import numpy as np
@@ -37,32 +83,26 @@ PSD_PARAMS_INIT = {'multitaper':
 class qEEG(BaseMethods):
     """Performs quantitative EEG analysis on a mne raw object.
 
-    Power spectrum analysis is computed on consecutive X ('windows_length') of raw EEG in the 'score' methods. Mean
-    absolute power of a given frequency bands can then be calculated overnight and in specific sleep stage. More
-    experimental metrics on the delta frequency bands [1] are also implemented. A full list of metrics
-    calculated can be found in XX.
+    Power spectrum analysis is computed on consecutive X ('windows_length') of
+    raw EEG in the 'score' methods. Mean absolute power of a given frequency
+    bands can then be calculated overnight and in specific sleep stage. More
+    experimental metrics on the delta frequency bands [1] are also implemented.
+    A full list of metrics calculated can be found in XX.
 
-    Event type is also supported in :py: XX, in which case raw EEG data is segmented relative to an event onset.
+    Event type is also supported in :py: XX, in which case raw EEG data
+    is segmented relative to an event onset.
 
     Parameters
     ----------
-
-    raw : mne.Base.io.raw object
-
-    hypnogram : hypnogram class
-
-    path : str or None
-    windows_size : int
+    windows_length : int
         Length of analysis windows. Default to 5 sec.
-
     psd_method : str
         PSD methods, 'welch', 'multitaper' or 'fft'
-
     psd_params : dict or None
         Optional parameters to be passed to shai.features.utils:power_spectrum. If psd_method = 'welch', psd_params
         should contain the following keys (`welch_n_fft`, `welch_n_per_seg`, `welch_n_overlap`). If psd_method
-         = 'multitaper', should contain the following ('mt_bandwidth','mt_adaptive','mt_low_bias'). If None,
-         default parameters are used.
+        = 'multitaper', should contain the following ('mt_bandwidth','mt_adaptive','mt_low_bias'). If None,
+        default parameters are used.
     before_event : int
         Time, in seconds relative to event onset, from which to start the analysis.
     after_event : int
@@ -109,7 +149,6 @@ class qEEG(BaseMethods):
                 value = np.hstack([value['Delta'][0], value['Delta'][1],
                                    value['Theta'][1], value['Alpha'][1],
                                    value['Sigma'][1], value['Beta'][1]])
-                #key = '_freq_bands'
             if hasattr(self, key):
                 setattr(self, key, value)
             else:
@@ -241,7 +280,7 @@ class qEEG(BaseMethods):
                     ev_dict['Event_Label'] = event_stage['label'].values
                     ev_dict['Event_Onset'] = event_stage['onset'].values
                     ev_dict['Event_Sleep_Stage'] = event_stage['stage_label']
-            print(ev_dict)
+
             #self.scoring_events[channel] = ev_dict
         #self.save_dict(self.scoring_events, self.path, score_type='qEEGev')
 
@@ -266,14 +305,13 @@ def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
     #onset = np.asarray(Stages['onset'].values * raw.info['sfreq'], dtype='int')
     #dur = np.asarray(Stages['duration'].values * raw.info['sfreq'],
     # dtype='int')
-    #label = Stages['label'].values
     data = epochs.get_data().squeeze() * 10 ** 6
     ########## Calculate Epoch Features ###########
     feat_dict = _calculate_epochs_parameters(raw.info['sfreq'], data, psd_method=psd_method,
                                              psd_params=psd_params,
                                              freq_bands=freq_bands)
     if type == 'stage':
-        feat_dict['SleepStage'] = label
+        feat_dict['SleepStage'] = Stages['label'].values
         feat_dict['SleepStageOnset'] = onset / raw.info['sfreq']
         feat_dict['SleepStageDuration'] = dur / raw.info['sfreq']
     return feat_dict
