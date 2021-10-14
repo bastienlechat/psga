@@ -11,23 +11,42 @@ import mne
 import time
 import scipy.signal
 
-def read_psg_compumedics(folder,include = 'all',raw_format = 'mne',
-                         resample = True, sf = 128,
-                         save_to_excel = False):
+def read_psg_compumedics(folder,include = 'all',mne_output = True,
+                         resample = True, sf = 128
+                         ):
     """
+    Read compumedics raw files. This function was only tested for files
+    recorded with Grael. Furthermore, data types may be different for older
+    file. If an error occurs, consider exporting your data to .edf using
+    profusion and use our :py:
 
     Parameters
     ----------
-    folder
-    include
-    raw_format
-    resample
-    sf
-    save_to_excel
+    folder : str
+        path to the folder containing compumedics files
+    include : list or 'all'
+        The list of channel to be loaded
+    mne_output : bool
+        If True (default), will output raw data as a :py:class:`mne.io.BaseRaw`
+        object. If False, will return a dict.
+    resample : bool
+        If True, all channels will be resampled to "sf" frequency.
+    sf : int
+        Sampling frequency to resample channels to (default 128).
 
     Returns
     -------
 
+    raw : :py:class:`mne.io.BaseRaw` or 'dict
+        An MNE Raw instance if mne_output is True, else a dict containing
+        informations about each channels + the data
+    hypnogram : pd.DataFrame
+        A dataframe with sleep staging (label, duration and onset) informations.
+    events : pd.DataFrame
+        A dataframe containing events (e.g. apneas, arousals) informations.
+        Each line corresponds to a different events. Dataframe keys are
+        "EVT_LABEL", "EVT_TIME" and "EVT_LENGTH" and represents label,
+        onset and duration of the onsets.
     """
     for file in ['STUDYCFG.xml', 'DATASEGMENTS.xml']:
         if not os.path.exists(os.path.join(folder, 'STUDYCFG.xml')):
@@ -36,9 +55,9 @@ def read_psg_compumedics(folder,include = 'all',raw_format = 'mne',
 
     pg = PSGcompumedics(folder)
     dtcdata = pg.raw_data(include=include)
-    hypno = pg.hypnogram()
+    hypnogram = pg.hypnogram()
     events = pg.events()
-    if raw_format =='mne':
+    if mne_output:
         ch_name = []
         ch_data = []
         ch_list = list(dtcdata.keys())
@@ -60,11 +79,11 @@ def read_psg_compumedics(folder,include = 'all',raw_format = 'mne',
                             sf=512
                             ch_data.append(data)
         info = mne.create_info(ch_name, sfreq=sf)
-        raw_data = mne.io.RawArray(np.vstack(ch_data), info, verbose='error')
+        raw = mne.io.RawArray(np.vstack(ch_data), info, verbose='error')
     else:
-        raw_data = dtcdata
+        raw = dtcdata
 
-    return raw_data,hypno,events
+    return raw,hypnogram,events
 
 def cpm_what_channels(folder):
     pg = PSGcompumedics(folder)
@@ -72,11 +91,7 @@ def cpm_what_channels(folder):
 
 class PSGcompumedics(PSGbase):
     """
-    Class to read compumedics files and instantiate PSG_base
-
-    We need this class because each type (compumedics, edfs.. etc) will have
-    different type of raw data. This really just provide interface for
-    input/output and PSGbase is the common interface
+    Class to read compumedics files
     """
 
     def __init__(self,folder, lights_on_off = None):
@@ -98,8 +113,24 @@ class PSGcompumedics(PSGbase):
             self.lights_off, self.lights_on = self._find_lights()
 
     def raw_data(self, include = 'all', detrend = True):
+        """
+        Reads PSG raw data and returns a dict.
+
+        Parameters
+        ----------
+        include : list or 'all'
+            The list of channel to be loaded
+        detrend : bool
+            If true, linear trend (offset values) will be removed using
+            :py:`scipy.signal.detrends`
+
+        Returns
+        -------
+        raw : dict
+            Data. Keys and values will depend on the channels (discrete vs
+            continuous)
+        """
         montage = self.montage
-        t0 = time.time()
         if include is 'all': include = list(montage.keys())
         for ch_name in list(montage.keys()):
             if ch_name in include:
@@ -113,7 +144,7 @@ class PSGcompumedics(PSGbase):
                     if 'DiscreteData' in list(ch.keys()):
                         t, data= read_dat_discrete_data(ch_file, ch_fs)
                     else:
-                        data = read_dat_data(ch_file, ch_fs)
+                        data = read_dat_data(ch_file)
                 else:
                     raise ValueError('Weird channel format: ' + ext)
 
@@ -154,6 +185,15 @@ class PSGcompumedics(PSGbase):
         return posture
 
     def hypnogram(self, trim = False):
+        """
+        Reads sleep staging informations.
+
+        Returns
+        -------
+        hypnogram : pd.DataFrame
+            A dataframe with sleep staging (label, duration and onset)
+            informations.
+        """
         hypno = np.asarray(self._stages, dtype='int')
         onsets = np.cumsum(np.ones_like(hypno)*self._epoch_length) - 30
         if trim:
@@ -169,6 +209,17 @@ class PSGcompumedics(PSGbase):
         return Stages
 
     def events(self):
+        """
+        Reads manual scoring of events (e.g. apneas and arousals).
+
+        Returns
+        -------
+        events : pd.DataFrame
+            A dataframe containing events (e.g. apneas, arousals) informations.
+            Each line corresponds to a different events. Dataframe keys are
+            "EVT_LABEL", "EVT_TIME" and "EVT_LENGTH" and represents label,
+            onset and duration of the onsets.
+        """
         _events = _read_event(self._folder)
         return _events
 

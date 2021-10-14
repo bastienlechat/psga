@@ -265,7 +265,7 @@ def _read_technician_note(folder):
     Notes
     -----
     The structure described above does not work for some byte blocks. I think
-    there is different file structure when techs are checking impedances . All
+    there is different file structure when techs are checking impedances. All
     technician notes (including user defined one) are coded according to the
     structure described above (this has been tested).
     """
@@ -355,6 +355,30 @@ def _read_sleep_stage(folder):
 
 
 def read_EDB_event(file):
+    """
+    Read the .EDB event file in a given compumedic folder.  Events are stored
+    in a binary file that should be structured in block of 40 bits.
+
+    Current guesses regarding block structure:
+        - First 4 (1-4 assuming index=1) unsigned integers representing the
+        events code
+        - 4 to 8 is unknown
+        - next 8 is a float representing event onset time
+        - next 8 is a float representing event duration time
+        - After that we are unsure of the structure. It seems the last bits
+        is a integer that is a binary values for manual vs automatic scoring
+
+    Parameters
+    ----------
+
+    folder : str
+        Path of the compumedics folder
+
+    Returns
+    -------
+    eventsframe : pd.DataFrame
+        Dataframe containing events scoring
+    """
     name_key = ['EVT_CODE','UNKNOWN1', 'EVT_TIME', 'EVT_LENGTH',
                 'PARAM3','PARAM2', 'PARAM1','MAN_SCORED']
     dt = np.dtype({'names': name_key,
@@ -372,15 +396,49 @@ def read_EDB_event(file):
         val = np.frombuffer(b, dt, count=1, offset=x)
         list_event.append(np.hstack(val[0]))
     events = np.vstack(list_event)
-    df = pd.DataFrame(data=events,columns=name_key)
+    eventsframe = pd.DataFrame(data=events,columns=name_key)
 
-    return df
+    return eventsframe
 
-def read_dat_data(fname, sf):
-    n = np.fromfile(fname, dtype=np.float32)
-    return n.squeeze()
+def read_dat_data(fname):
+    """
+    .DAT files are raw data stored without any compression. This was how most
+    of the data was stored before introducing the .d16 format.
+
+    Parameters
+    ----------
+    fname : str
+        file to read
+
+    Returns
+    -------
+    signal : np.array
+        the data
+    """
+    signal = np.fromfile(fname, dtype=np.float32)
+    return signal.squeeze()
 
 def read_dat_discrete_data(fname, sf):
+    """
+    .DAT discrete files are used to store data such as heart rate, which are
+    not necessarily continuous in time. These are stored in block of 8 where
+    the first 4 bits represents the time (in points) of the data and the next
+    8 represents the actual values.
+
+    Parameters
+    ----------
+    fname : str
+        file to read
+    sf : int
+        Sampling frequency
+
+    Returns
+    -------
+    t : np.array
+        Timing of the data (in seconds)
+    v : np.array
+        Values of the data
+    """
     n = np.fromfile(fname, dtype=np.uint8).reshape(-1, 8)
     t = n[:, 0:4].copy().view(np.int) / sf
     v = n[:, 4:8].copy().view(np.float32)
@@ -388,24 +446,40 @@ def read_dat_discrete_data(fname, sf):
     return t.squeeze(), v.squeeze()
 
 def read_d16_data(fname, sf):
-    #import time
-    #t0 = time.time()
+    """
+    Read the .D16 raw data file in a given compumedic folder. ".D16" files are
+    coded using some kind of lossy compression that uses the first bits to
+    store a scale/offset as floats and subsequent datapoints as integer.
+    Integers are then rescale using the scale/offset.
+
+    The block size depends on the sampling frequency of the signal. and
+    corresponds to a 1 seconds block size (of int16) + 8 bits (4 for scale
+    and 4 for offset)
+
+    Parameters
+    ----------
+    fname : str
+        file to read
+    sf : int
+        Sampling frequency
+
+    Returns
+    -------
+    signal : np.array
+        the signal
+
+    Notes
+    -----
+    For discontinuous recordings, one will have to pad with zeros the signal
+    using the different data segments. See _read_data_segments for more
+    information.
+    """
     next_shape = 4 + 4 + 2 * sf
-    # Read file and reshape as "records" of 28 bytes each
     n = np.fromfile(fname, dtype=np.uint8).reshape(-1, next_shape)
-    OFFSET = n[:, 0:4].copy().view(np.float32) * -1  # pick bytes 4-8,
-    # make contiguous
-    # and view as integer
-    SCALE = n[:, 4:8].copy().view(
-        np.float32)  # pick bytes 8-16, make contiguous and
-    # view as float64
-    LEVEL = n[:, 8:].copy().view(np.int16) * -1  # pick bytes 16-24,
-    # make contiguous
-    # and
-    # view as float64
-    # print(LEVEL)
+    OFFSET = n[:, 0:4].copy().view(np.float32) * -1
+    SCALE = n[:, 4:8].copy().view(np.float32)
+    LEVEL = n[:, 8:].copy().view(np.int16) * -1
     cumsum_level = np.cumsum(LEVEL, axis=1)
     mat_signal = np.add(OFFSET, np.multiply(SCALE, cumsum_level))
     signal = np.reshape(mat_signal, (-1, 1))
-
     return signal.squeeze()
