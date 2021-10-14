@@ -6,7 +6,7 @@ import warnings
 from ..utils import check_is_fitted
 from ..base import BaseMethods
 from ...features.utils import power_spectrum, _psd_params_checker
-#from ...hypnogram import _convert_hypno
+from ...hypnogram import _convert_hypno
 from ...features.time_features import compute_maximum_value_epochs, \
     compute_ptp_amp, \
     compute_rms_value_epochs, compute_std, compute_zero_crossings, \
@@ -17,7 +17,6 @@ from ...features.spectral_features import compute_absol_pow_freq_bands, \
     compute_hjorth_spect, compute_spect_entropy, \
     compute_spect_slope, compute_spect_edge_freq
 from ...features.denoising_function import moving_average_weighted
-
 import yaml
 
 import joblib
