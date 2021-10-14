@@ -111,13 +111,6 @@ class qEEG(BaseMethods):
         Time, in seconds, of the size of the windows analysis.
     save_results : bool
         If true, will save the results at the given "path"
-
-    Methods
-    -------
-
-    Notes
-    ------
-
     """
     def __init__(self, windows_length = 5, psd_method = 'multitaper',
                  events_windows_length = 5, events_lower_bound = -20,
@@ -185,8 +178,9 @@ class qEEG(BaseMethods):
     def overnight_metrics(self, kdftype='lct2020'):
         """Calculate summary descriptive metrics of an overnight.
 
-        Calculate the mean of each metrics calculated in "qEEG.score()" for individual sleep stages. More
-        experimental metrics on the delta frequency bands [1] are also implemented. A full list of metrics
+        Calculate the mean of each metrics calculated in "qEEG.score()" for
+        individual sleep stages. More experimental metrics on the delta
+        frequency bands [1] are also implemented. A full list of metrics
         calculated can be found in Notes.
 
         Notes
@@ -245,22 +239,22 @@ class qEEG(BaseMethods):
     def score_from_events(self, events):
         """Calculate power spectrum based metrics for each segment of length windows_size
 
-        Cut raw EEG from "before_event" to "after_event" in epochs of size "len_windows" and calculate a range
-        of temporal and spectrum based metrics.
+        Cut raw EEG from "before_event" to "after_event" in epochs of size
+        "len_windows" and calculate a range of temporal and spectrum based
+        metrics.
 
         Parameters
         ----------
-
         event_file : str
         excel file containing event onset (in seconds), the label and duration of each events.
 
         Notes
         -----
         The following parameters are calculated for each segments:
-
         """
         hypno = self._hypno
         raw = self._raw
+        metrics = {}
         for channel in raw.info['ch_names']:
             ev_dict = {}
             for count, tmin in enumerate(
@@ -280,10 +274,8 @@ class qEEG(BaseMethods):
                     ev_dict['Event_Label'] = event_stage['label'].values
                     ev_dict['Event_Onset'] = event_stage['onset'].values
                     ev_dict['Event_Sleep_Stage'] = event_stage['stage_label']
-
-            #self.scoring_events[channel] = ev_dict
-        #self.save_dict(self.scoring_events, self.path, score_type='qEEGev')
-
+            metrics[channel] = ev_dict
+        return metrics
 
 def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
                 psd_method=None, psd_params=None,
@@ -326,10 +318,8 @@ def add_label_to_events(events, Stages):
     """
     onset_stages = Stages['onset'].values
     stages_label = Stages['label'].values
-    onsets_of_all_events = events['onset'].values
     corresponding_stage = []
-
-    for single_onset_events in onsets_of_all_events:
+    for single_onset_events in events['onset'].values:
         # find the preceding stage onset
         index_of_preceding_stage = \
         np.argwhere(onset_stages < single_onset_events)[-1]
