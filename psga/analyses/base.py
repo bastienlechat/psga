@@ -9,7 +9,8 @@ class BaseMethods(object):
 
     #def __init__(self,raw,hypnogram, path, path_event):
     def __init__(self):
-        assert self.CONFIG_PATH, 'Child class must override CONFIG_PATH'
+        pass
+        #assert self.CONFIG_PATH, 'Child class must override CONFIG_PATH'
 
     def fit(self, raw, hypnogram, picks=None,**kwargs):
         raise NotImplementedError

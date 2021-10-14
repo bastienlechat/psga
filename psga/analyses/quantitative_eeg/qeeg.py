@@ -18,26 +18,21 @@ from ...features.spectral_features import compute_absol_pow_freq_bands, \
     compute_spect_slope, compute_spect_edge_freq
 from ...features.denoising_function import moving_average_weighted
 import yaml
-
-import joblib
-
-
-def mergeDict(dict1, dict2):
-    ''' Merge dictionaries and keep values of common keys in list'''
-    dict3 = {**dict1, **dict2}
-    for key, value in dict3.items():
-        if key in dict1 and key in dict2:
-            dict3[key] = np.hstack([value, dict1[key]])
-    return dict3
-
-
 import sys
-
+import joblib
 try:
     wd = sys._MEIPASS
 except AttributeError:
     wd = os.path.dirname(__file__)
 
+FREQ_INIT = {'Delta': [0.5,4.5], 'Theta': [4.5, 7.0], 'Alpha': [7,12],
+             'Sigma': [12,16], 'Beta': [16,35]}
+PSD_PARAMS_INIT = {'multitaper':
+                       {'mt_adaptive': True, 'mt_bandwidth': 1,
+                        'mt_low_bias':True},
+                   'welch':{'welch_n_fft':256,
+                            'welch_n_per_seg':None,
+                            'welch_n_overlap':0}}
 
 class qEEG(BaseMethods):
     """Performs quantitative EEG analysis on a mne raw object.
@@ -84,13 +79,25 @@ class qEEG(BaseMethods):
     ------
 
     """
-
-    CONFIG_PATH = os.path.join(wd, 'qeeg_params.yaml')
-
-    def __init__(self, **kwargs):
+    def __init__(self, windows_length = 5, psd_method = 'multitaper',
+                 events_windows_length = 5, events_lower_bound = -20,
+                 events_upper_bound = 20,
+                 ):
+        self.freq_bands = np.hstack([FREQ_INIT['Delta'][0],
+                                    FREQ_INIT['Delta'][1],
+                                    FREQ_INIT['Theta'][1],
+                                    FREQ_INIT['Alpha'][1],
+                                    FREQ_INIT['Sigma'][1],
+                                    FREQ_INIT['Beta'][1]])
+        self.psd_method = psd_method
+        self.psd_params = PSD_PARAMS_INIT[psd_method]
+        self.windows_length = windows_length
+        self.events_windows_length = events_windows_length
+        self.events_lower_bound = events_lower_bound
+        self.events_upper_bound = events_upper_bound
         super().__init__()
-        self.load_base_config()
-        if kwargs: self.set_params(kwargs, check_has_key=True)
+        #self.load_base_config()
+        #if kwargs: self.set_params(kwargs, check_has_key=True)
 
     def set_params(self, parameters_dict, check_has_key=False):
         for key, value in parameters_dict.items():
@@ -102,19 +109,11 @@ class qEEG(BaseMethods):
                 value = np.hstack([value['Delta'][0], value['Delta'][1],
                                    value['Theta'][1], value['Alpha'][1],
                                    value['Sigma'][1], value['Beta'][1]])
-                key = '_freq_bands'
-            if check_has_key:
-                if hasattr(self, key):
-                    setattr(self, key, value)
-                else:
-                    warnings.warn(key + ' key is not a valid attribute')
-            else:
+                #key = '_freq_bands'
+            if hasattr(self, key):
                 setattr(self, key, value)
-
-    def load_base_config(self):
-        with open(self.CONFIG_PATH, 'r') as stream:
-            cfg = yaml.load(stream)
-        self.set_params(cfg)
+            else:
+                warnings.warn(key + ' key is not a valid attribute')
 
     def fit(self, raw, hypnogram, picks=None, *args, **kwargs):
         self._check_raw(raw)
@@ -143,7 +142,7 @@ class qEEG(BaseMethods):
             self._scoring[channel] = _score_qEEG(
                 raw, hypno, channel, tmin=0,
                 tmax=hypno['duration'].values[0], psd_method=self.psd_method,
-                psd_params=self.psd_params, freq_bands=self._freq_bands)
+                psd_params=self.psd_params, freq_bands=self.freq_bands)
 
         return self._scoring, self._epochs_data
 
@@ -165,14 +164,11 @@ class qEEG(BaseMethods):
         scoring = self._scoring.items()
         metrics = {}
         is_scored = True
-
         for channel, qeeg_dict in scoring:
             df = pd.DataFrame.from_dict(qeeg_dict)
             st = df.loc[df.Max_Val < 400, :]
             if -1 in np.unique(df.SleepStage.values):  is_scored = False
-
             if not is_scored: kdftype = 'log'
-
             if is_scored:
                 # by individual sleep stage
                 grouped = st.groupby(by='SleepStage').mean().drop(
@@ -228,35 +224,28 @@ class qEEG(BaseMethods):
         The following parameters are calculated for each segments:
 
         """
-
         events = pd.read_excel(event_file)
         Stages = self.hypnogram.to_df(sleep_onset_offset=True,
                                       windows_size=self.windows_length)
-
         for channel in self.raw.info['ch_names']:
-
             ev_dict = {}
             for count, tmin in enumerate(
                     np.arange(self.events_lower_bound, self.events_upper_bound,
                               self.events_windows_length)):
                 tmax = tmin + self.events_windows_length
-
                 temp_dict = _score_qEEG(self.raw, events, channel, tmin=tmin,
                                         tmax=tmax, type='event',
                                         psd_method=self.psd_method,
                                         psd_params=self.psd_params,
-                                        freq_bands=self._freq_bands
+                                        freq_bands=self.freq_bands
                                         )
-
                 for key, val in temp_dict.items():
                     ev_dict[str(tmin) + 'W_' + key] = val
-
                 if count == 0:
                     event_stage = add_label_to_events(events, Stages)
                     ev_dict['Event_Label'] = event_stage['label'].values
                     ev_dict['Event_Onset'] = event_stage['onset'].values
                     ev_dict['Event_Sleep_Stage'] = event_stage['stage_label']
-
             self.scoring_events[channel] = ev_dict
         self.save_dict(self.scoring_events, self.path, score_type='qEEGev')
 
@@ -280,23 +269,12 @@ def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
     onset = np.asarray(Stages['onset'].values * raw.info['sfreq'], dtype='int')
     dur = np.asarray(Stages['duration'].values * raw.info['sfreq'], dtype='int')
     label = Stages['label'].values
-    # print(np.shape(Stages))
     data = epochs.get_data().squeeze() * 10 ** 6
-
-    # print(data[:10,:10])
-    # print(np.shape(data))
     sfreq = raw.info['sfreq']
-
-    # This check if mne rejected any epochs (and it shouldn't since we set reject = None)
-    if _too_many_rejected_epoch(data, label):
-        raise ValueError(
-            'Sleep stage scoring has epochs finishing/starting before the recording')
-
     ########## Calculate Epoch Features ###########
     feat_dict = _calculate_epochs_parameters(sfreq, data, psd_method=psd_method,
                                              psd_params=psd_params,
                                              freq_bands=freq_bands)
-
     if type == 'stage':
         feat_dict['SleepStage'] = label
         feat_dict['SleepStageOnset'] = onset / sfreq
@@ -315,37 +293,18 @@ def add_label_to_events(events, Stages):
     onset_stages = Stages['onset'].values
     stages_label = Stages['label'].values
     onsets_of_all_events = events['onset'].values
-
     corresponding_stage = []
-    baseline_stage = []
 
     for single_onset_events in onsets_of_all_events:
         # find the preceding stage onset
         index_of_preceding_stage = \
         np.argwhere(onset_stages < single_onset_events)[-1]
-
         if int(single_onset_events - onset_stages[
             index_of_preceding_stage]) < 15:
-            # print(int(single_onset_events - onset_stages[
-            # index_of_preceding_stage]))
             index_of_preceding_stage = index_of_preceding_stage - 1
-
         corresponding_stage.append(stages_label[index_of_preceding_stage])
-
     events['stage_label'] = np.hstack(corresponding_stage)
     return events
-
-
-def _too_many_rejected_epoch(data, label):
-    if np.shape(data)[0] != len(label):
-        n_epoch_dropped = len(label) - np.shape(data)[0]
-
-        if n_epoch_dropped > 0:
-            warnings.warn('{} epochs were dropped'.format(n_epoch_dropped))
-            return False
-        else:
-            return True
-
 
 def _calculate_epochs_parameters(sfreq, data, psd_method='multitaper',
                                  psd_params=None,
@@ -354,34 +313,28 @@ def _calculate_epochs_parameters(sfreq, data, psd_method='multitaper',
     psd, freqs = power_spectrum(sfreq, data, psd_method=psd_method,
                                 **psd_params, verbose=False)
     precomputed_psd = {'psd': psd.squeeze(), 'freqs': freqs}
-
     ### Calculate absolute frequencies of epoched data ########
     absolute_bands = compute_absol_pow_freq_bands(sfreq, data.squeeze(),
                                                   freq_bands=freq_bands,
                                                   precomputed_psd=precomputed_psd)
     freq_name = ['absolute_delta', 'absolute_theta', 'absolute_alpha',
                  'absolute_sigma', 'absolute_beta']
-
     ### Calculate absolute frequencies of epoched data ########
     relative_bands = compute_relative_pow_ratios(absolute_bands)
     ratio_name = ['deltaR', 'thetaR', 'alphaR', 'sigmaR', 'betaR', 'DAR',
                   'SLOWING_RATIO', 'REMR']
-
     ### Calculate range of spectral feature of epoched data ########
     spectral_features = np.column_stack((
-        compute_hjorth_spect(sfreq, data, precomputed_psd=precomputed_psd),
+        #compute_hjorth_spect(sfreq, data, precomputed_psd=precomputed_psd),
         compute_spect_entropy(sfreq, data, precomputed_psd=precomputed_psd),
         # compute_spect_slope(sfreq, data,fmin=0.1,fmax=35, precomputed_psd=precomputed_psd),
         compute_spect_edge_freq(sfreq, data, precomputed_psd=precomputed_psd,
-                                edge=[0.25, 0.5, 0.75, 0.85, 0.95])
+                                edge=[0.85, 0.95])
     ))
-
-    spec_feature_names = ['Hjort_Spect_mobility', 'Hjort_Spect_complexity',
+    spec_feature_names = [#'Hjort_Spect_mobility', 'Hjort_Spect_complexity',
                           'Spectral_Entropy',
-                          'Spectral_Edge_25', 'Spectral_Edge_50',
-                          'Spectral_Edge_75', 'Spectral_Edge_85',
+                          'Spectral_Edge_85',
                           'Spectral_Edge_95']
-
     ### Calculate range of temporal feature of epoched data ########
     temporal_features = np.column_stack((
         compute_maximum_value_epochs(data),
@@ -389,23 +342,19 @@ def _calculate_epochs_parameters(sfreq, data, psd_method='multitaper',
         compute_ptp_amp(data),
         compute_std(data),
         compute_zero_crossings(data),
-        compute_hjorth(data),
-
+        #compute_hjorth(data),
     ))
     t_feature_names = ['Max_Val', 'RMS_Val', 'PTP_Amp', 'std', 'ZCR',
-                       'Hjorth_Activity', 'Hjorth_Mobility',
-                       'Hjorth_Complexity']
-
-    #### Pool feature together and save to excel ####
-
+                       #'Hjorth_Activity', 'Hjorth_Mobility',
+                       #'Hjorth_Complexity'
+                       ]
+    #### Pool feature together ####
     features = np.column_stack((absolute_bands, relative_bands,
                                 spectral_features, temporal_features))
     feat_name = np.hstack([freq_name, ratio_name,
                            spec_feature_names, t_feature_names])
-
     feature_dict = {k: v for k, v in zip(feat_name, features.T)}
     return feature_dict
-
 
 def _delta_fluctuations_parameters(overnight_fluctuations):
     data = np.expand_dims(overnight_fluctuations, axis=0)
@@ -424,3 +373,12 @@ def _delta_fluctuations_parameters(overnight_fluctuations):
     features_delta_dict = {k: float(v[0]) for k, v in zip(names,
                                                           features_delta_band.T)}
     return features_delta_dict
+
+
+def mergeDict(dict1, dict2):
+    ''' Merge dictionaries and keep values of common keys in list'''
+    dict3 = {**dict1, **dict2}
+    for key, value in dict3.items():
+        if key in dict1 and key in dict2:
+            dict3[key] = np.hstack([value, dict1[key]])
+    return dict3
