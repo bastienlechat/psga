@@ -134,16 +134,13 @@ class qEEG(BaseMethods):
         self._scoring = {}
         self._epochs_data = {}
         check_is_fitted(self, ['_raw', '_hypno'])
-
         hypno = self._hypno
         raw = self._raw
-
         for channel in raw.info['ch_names']:
             self._scoring[channel] = _score_qEEG(
                 raw, hypno, channel, tmin=0,
                 tmax=hypno['duration'].values[0], psd_method=self.psd_method,
                 psd_params=self.psd_params, freq_bands=self.freq_bands)
-
         return self._scoring, self._epochs_data
 
     def overnight_metrics(self, kdftype='lct2020'):
@@ -202,12 +199,11 @@ class qEEG(BaseMethods):
                 features = _delta_fluctuations_parameters(ldelta_smoothed)
             else:
                 raise NotImplementedError
-
             m = {**grpstaged, **features}
             metrics[channel] = {channel + k: v for k, v in m.items()}
         return metrics
 
-    def score_from_events(self, event_file):
+    def score_from_events(self, events):
         """Calculate power spectrum based metrics for each segment of length windows_size
 
         Cut raw EEG from "before_event" to "after_event" in epochs of size "len_windows" and calculate a range
@@ -224,16 +220,15 @@ class qEEG(BaseMethods):
         The following parameters are calculated for each segments:
 
         """
-        events = pd.read_excel(event_file)
-        Stages = self.hypnogram.to_df(sleep_onset_offset=True,
-                                      windows_size=self.windows_length)
-        for channel in self.raw.info['ch_names']:
+        hypno = self._hypno
+        raw = self._raw
+        for channel in raw.info['ch_names']:
             ev_dict = {}
             for count, tmin in enumerate(
                     np.arange(self.events_lower_bound, self.events_upper_bound,
                               self.events_windows_length)):
                 tmax = tmin + self.events_windows_length
-                temp_dict = _score_qEEG(self.raw, events, channel, tmin=tmin,
+                temp_dict = _score_qEEG(raw, events, channel, tmin=tmin,
                                         tmax=tmax, type='event',
                                         psd_method=self.psd_method,
                                         psd_params=self.psd_params,
@@ -242,12 +237,13 @@ class qEEG(BaseMethods):
                 for key, val in temp_dict.items():
                     ev_dict[str(tmin) + 'W_' + key] = val
                 if count == 0:
-                    event_stage = add_label_to_events(events, Stages)
+                    event_stage = add_label_to_events(events, hypno)
                     ev_dict['Event_Label'] = event_stage['label'].values
                     ev_dict['Event_Onset'] = event_stage['onset'].values
                     ev_dict['Event_Sleep_Stage'] = event_stage['stage_label']
-            self.scoring_events[channel] = ev_dict
-        self.save_dict(self.scoring_events, self.path, score_type='qEEGev')
+            print(ev_dict)
+            #self.scoring_events[channel] = ev_dict
+        #self.save_dict(self.scoring_events, self.path, score_type='qEEGev')
 
 
 def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
@@ -256,8 +252,8 @@ def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
     ###### MNE needs an array type in points, not seconds ###########
     onset = np.asarray(Stages['onset'].values * raw.info['sfreq'], dtype='int')
     dur = np.asarray(Stages['duration'].values * raw.info['sfreq'], dtype='int')
-    label_for_mne = np.ones_like(Stages['duration'].values, dtype='int')
-    events = np.vstack((onset, dur, label_for_mne)).T
+    label = np.ones_like(Stages['duration'].values, dtype='int')
+    events = np.vstack((onset, dur, label)).T
 
     ################## Get epoch data ###################
     epochs = mne.Epochs(raw, events, picks=[channel], event_id=None, tmin=tmin,
@@ -265,21 +261,21 @@ def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
                         baseline=(None, None),
                         reject=None, reject_by_annotation=False,
                         verbose='critical', flat=None)
-    Stages = Stages.loc[epochs.selection, :]
-    onset = np.asarray(Stages['onset'].values * raw.info['sfreq'], dtype='int')
-    dur = np.asarray(Stages['duration'].values * raw.info['sfreq'], dtype='int')
-    label = Stages['label'].values
+    assert len(epochs.selection) == len(Stages)
+    #Stages = Stages.loc[epochs.selection, :]
+    #onset = np.asarray(Stages['onset'].values * raw.info['sfreq'], dtype='int')
+    #dur = np.asarray(Stages['duration'].values * raw.info['sfreq'],
+    # dtype='int')
+    #label = Stages['label'].values
     data = epochs.get_data().squeeze() * 10 ** 6
-    sfreq = raw.info['sfreq']
     ########## Calculate Epoch Features ###########
-    feat_dict = _calculate_epochs_parameters(sfreq, data, psd_method=psd_method,
+    feat_dict = _calculate_epochs_parameters(raw.info['sfreq'], data, psd_method=psd_method,
                                              psd_params=psd_params,
                                              freq_bands=freq_bands)
     if type == 'stage':
         feat_dict['SleepStage'] = label
-        feat_dict['SleepStageOnset'] = onset / sfreq
-        feat_dict['SleepStageDuration'] = dur / sfreq
-
+        feat_dict['SleepStageOnset'] = onset / raw.info['sfreq']
+        feat_dict['SleepStageDuration'] = dur / raw.info['sfreq']
     return feat_dict
 
 
@@ -365,7 +361,6 @@ def _delta_fluctuations_parameters(overnight_fluctuations):
         compute_ratio_energy_time_mass(data, q=[0.5, 0.75]),
         compute_spect_slope(2, data, psd_method='fft', fmin=None, fmax=1)
     ))
-
     names = ['Spectral_Entropy_kdf', 'Spectral_Edge_75_kdf',
              'Spectral_Edge_95_kdf',
              'TimeMass50_kdf', 'TimeMass75_kdf', 'DER_50_kdf', 'DER_75_kdf',
@@ -373,12 +368,3 @@ def _delta_fluctuations_parameters(overnight_fluctuations):
     features_delta_dict = {k: float(v[0]) for k, v in zip(names,
                                                           features_delta_band.T)}
     return features_delta_dict
-
-
-def mergeDict(dict1, dict2):
-    ''' Merge dictionaries and keep values of common keys in list'''
-    dict3 = {**dict1, **dict2}
-    for key, value in dict3.items():
-        if key in dict1 and key in dict2:
-            dict3[key] = np.hstack([value, dict1[key]])
-    return dict3
