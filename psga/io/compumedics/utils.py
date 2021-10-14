@@ -144,12 +144,7 @@ def _read_epoch_data(folder):
     return epochdata
 
 def _read_header(folder):
-    """
-
-    Returns
-    -------
-
-    """
+    """Reads compumedics header"""
     config_tree = ET.parse(os.path.join(folder, 'STUDYCFG.xml'))
     root = config_tree.getroot()
     header = {}
@@ -160,16 +155,7 @@ def _read_header(folder):
     return header
 
 def _read_montage(folder):
-    """
-
-    Parameters
-    ----------
-    folder
-
-    Returns
-    -------
-
-    """
+    """Reads the mapping between channel name and file name"""
     config_tree = ET.parse(os.path.join(folder, 'STUDYCFG.xml'))
     root = config_tree.getroot()
     montage = {}
@@ -196,10 +182,12 @@ def _read_data_segments(folder):
     system).
     Start and duration of each recording blocks is useful to 0-pad signals
     when recording was discontinued (gap between segments).
-    :param folder: compumedic folder
-    :return: list of dict
-        - Each dict has the following keys: "Start", "Duration",
-        "VideoServer", "VideoID"
+
+    Returns
+    -------
+    raw : list of dict
+        For each block, a dict is created with the following
+        keys: "Start", "Duration", "VideoServer", "VideoID"
     """
     ds_tree = ET.parse(os.path.join(folder, 'DATASEGMENTS.xml'))
     root = ds_tree.getroot()

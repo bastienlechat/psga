@@ -86,6 +86,8 @@ def read_psg_compumedics(folder,include = 'all',mne_output = True,
     return raw,hypnogram,events
 
 def cpm_what_channels(folder):
+    """Helper functions to print available channels given a folder with
+    polysomnography files"""
     pg = PSGcompumedics(folder)
     print(pg.available_channel)
 
@@ -179,6 +181,14 @@ class PSGcompumedics(PSGbase):
         return montage
 
     def posture(self):
+        """
+        Reads posture information from compumedics files.
+
+        Returns
+        -------
+        posture : pd.Dataframe
+            Dataframe containing posture informations for each epochs.
+        """
         posture = self._epoch_data[['Posture']]
         posture['onset'] = np.cumsum(np.ones_like(posture['Posture'].values)*30)
         posture['duration'] = np.ones_like(posture['onset'].values) * 30
