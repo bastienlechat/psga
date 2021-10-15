@@ -165,7 +165,9 @@ class qEEG(BaseMethods):
         - Absolute and relative power of delta,theta, alpha, sigma, and beta
         bands
         - 'Delta/alpha ratio, slowing ratio and REM ratio
-        - 'Max_Val', 'RMS_Val', 'PTP_Amp', 'std', 'ZCR',
+        - Maximum, RMS, SD and peak-to-peak values of EEG epochs data
+        - zero crossing rate of each EEG epochs
+        - Spectral entropy and Spectral edges (q =0.85 and 0.95)
         """
         self._scoring = {}
         self._epochs_data = {}
