@@ -162,6 +162,10 @@ class qEEG(BaseMethods):
         Notes
         -----
         The following parameters are calculated for each segments and for each EEG channel:
+        - Absolute and relative power of delta,theta, alpha, sigma, and beta
+        bands
+        - 'Delta/alpha ratio, slowing ratio and REM ratio
+        - 'Max_Val', 'RMS_Val', 'PTP_Amp', 'std', 'ZCR',
         """
         self._scoring = {}
         self._epochs_data = {}
