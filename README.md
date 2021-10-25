@@ -13,6 +13,8 @@ If you are after analyses not available in PSGA,
 [YASA](https://raphaelvallat.com/yasa/build/html/index.html) is another 
 sleep EEG analysis package that may have the analysis you require.
 
+**WARNING**: PSGA is still a work in progress, use at your own risk.
+
 ---
 
 ## Getting started
@@ -21,6 +23,16 @@ PSGA is not yet available on pip/conda. Our tools were developed in Python 3.7
 and require the following dependencies: 
 [MNE](https://mne.tools/stable/index.html), [pandas](https://pandas.pydata.org/)
 and [scikit-learn](https://scikit-learn.org/stable/).
+
+## User-interface (TBA)
+
+PSGA comes with a user-friendly dashboard to quickly visualise your data. 
+The dashboard additionaly requires 
+[Pyside2](https://wiki.qt.io/Qt_for_Python) and 
+[plotly](https://plotly.com/). The dashboard is not designed for manual 
+scoring of events. If you are after an UI to score sleep, consider using 
+[visbrain-sleep](http://visbrain.org/sleep.html).
+
 
 ## Citation
 
