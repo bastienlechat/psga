@@ -1,5 +1,5 @@
 """
-This is a combination of multiple function to exctract spectral features from a
+This is a combination of multiple function to extract spectral features from a
 mne Epochs objects. Some of these functions are a from the mne-features packages
 (https://github.com/mne-tools/mne-features) with some small modifications and
 all the credit goes to the authors of this package.

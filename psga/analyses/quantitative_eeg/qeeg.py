@@ -1,5 +1,4 @@
 """
-
 This modules performs spectral analysis of EEG signals (sometimes
 refered as quantitative EEG) on a mne object. EEG Sleep EEG is ideally suited
 to frequency and time-frequency analysis, since different stages or
