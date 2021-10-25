@@ -9,6 +9,10 @@ Specifically, this packages can perform the following analyses:
 - R-peaks detection and heart rate variability analyses (TBA)
 - Breaths detection and ventilation summary metrics (TBA)
 
+If you are after analyses not available in PSGA, 
+[YASA](https://raphaelvallat.com/yasa/build/html/index.html) is another 
+sleep EEG analysis package that may have the analysis you require.
+
 ---
 
 ## Getting started
