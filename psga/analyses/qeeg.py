@@ -51,20 +51,20 @@ import os
 import numpy as np
 import pandas as pd
 import warnings
-from ..utils import check_is_fitted
-from ..base import BaseMethods
-from ...features.utils import power_spectrum, _psd_params_checker
-from ...hypnogram import _convert_hypno
-from ...features.time_features import compute_maximum_value_epochs, \
+from psga.analyses.utils import check_is_fitted
+from psga.analyses.base import BaseMethods
+from psga.features.utils import power_spectrum, _psd_params_checker
+from psga.hypnogram import _convert_hypno
+from psga.features.time_features import compute_maximum_value_epochs, \
     compute_ptp_amp, \
     compute_rms_value_epochs, compute_std, compute_zero_crossings, \
     compute_time_mass, \
     compute_hjorth, compute_ratio_energy_time_mass
-from ...features.spectral_features import compute_absol_pow_freq_bands, \
+from psga.features.spectral_features import compute_absol_pow_freq_bands, \
     compute_relative_pow_ratios, \
     compute_hjorth_spect, compute_spect_entropy, \
     compute_spect_slope, compute_spect_edge_freq
-from ...features.denoising_function import moving_average_weighted
+from psga.features.denoising_function import moving_average_weighted
 import yaml
 import sys
 import joblib
