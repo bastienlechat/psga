@@ -29,7 +29,10 @@ P. L. (2017). Sleep Neurophysiological Dynamics Through the Lens of
 Multitaper Spectral Analysis. Physiology (Bethesda), 32(1),
 60-92. doi:10.1152/physiol.00062.2015
 
-[3] TBA
+[3] Lechat, B., Hansen, K. L., Melaku, Y. A., Vakulin, A., Micic, G.,
+Adams, R. J., . . . Zajamsek, B. (2021). A Novel EEG Derived Measure of
+Disrupted Delta Wave Activity during Sleep Predicts All-Cause Mortality Risk.
+Ann Am Thorac Soc, (in press). doi:10.1513/AnnalsATS.202103-315OC
 
 [4] Scott, H., Lechat, B., Lovato, N., & Lack, L. (2020).
 Correspondence between physiological and behavioural responses
@@ -88,8 +91,10 @@ class qEEG(BaseMethods):
     experimental metrics on the delta frequency bands [1] are also implemented.
     A full list of metrics calculated can be found in XX.
 
-    Event type is also supported in :py: XX, in which case raw EEG data
-    is segmented relative to an event onset.
+    This class can also be used to perform analysis of qEEG relative to a
+    given events in the score_events methods. Given an event dataframe,
+    the methods will score qEEG relative to the event onset. For more
+    information, please see [2,3]
 
     Parameters
     ----------
@@ -110,6 +115,27 @@ class qEEG(BaseMethods):
         Time, in seconds, of the size of the windows analysis.
     save_results : bool
         If true, will save the results at the given "path"
+
+    Notes
+    -----
+
+    References
+    -----
+    [1] Lechat, B., Hansen, K. L., Melaku, Y. A., Vakulin, A., Micic, G.,
+    Adams, R. J., . . . Zajamsek, B. (2021). A Novel EEG Derived Measure of
+    Disrupted Delta Wave Activity during Sleep Predicts All-Cause Mortality Risk.
+    Ann Am Thorac Soc, (in press). doi:10.1513/AnnalsATS.202103-315OC
+
+    [2] Scott, H., Lechat, B., Lovato, N., & Lack, L. (2020).
+    Correspondence between physiological and behavioural responses to
+    vibratory stimuli during the sleep onset period: A quantitative
+    electroencephalography analysis. J Sleep Res, e13232. doi:10.1111/jsr.13232
+
+    [3] Dunbar, C., Catcheside, P., Lechat, B., Hansen, K., Zajamske, B.,
+    Liebich, T., Nguyen, D.P., Scott, H., Lack, L., Decup, F., Vakulin, A.,
+    Micic, G., EEG power spectral responses to wind farm compared to road
+    traffic noise during sleep: A laboratory study. (in press) J Sleep Res,
+
     """
     def __init__(self, windows_length = 5, psd_method = 'multitaper',
                  events_windows_length = 5, events_lower_bound = -20,
