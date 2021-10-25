@@ -41,7 +41,8 @@ If you find this code useful, please consider citing the following publication:
 Lechat, B., Hansen, K. L., Melaku, Y. A., Vakulin, A., Micic, G., 
 Adams, R. J., . . . Zajamsek, B. (2021). A Novel EEG Derived Measure of 
 Disrupted Delta Wave Activity during Sleep Predicts All-Cause Mortality Risk. 
-Ann Am Thorac Soc, (in press). doi:10.1513/AnnalsATS.202103-315OC
+Ann Am Thorac Soc, (in press). 
+[doi:10.1513/AnnalsATS.202103-315OC](https://doi.org/10.1513/AnnalsATS.202103-315OC)
 
 
 ## Acknowledgments
