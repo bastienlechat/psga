@@ -6,7 +6,7 @@ Specifically, this packages can perform the following analyses:
 - Spectral power analysis of EEG (sometimes refered as quantitative EEG)
 - K-complexes detection (TBA)
 - Analysis of pulse wave amplitude (and pulse arrival time) signals (TBA)
-- R-peaks detection and heart rate variability analyses (TBA)
+- R-peaks detection and heart rate variability analyses
 - Breaths detection and ventilation summary metrics (TBA)
 
 If you are after analyses not available in PSGA, 

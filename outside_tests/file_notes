@@ -1,0 +1,44 @@
+"""
+
+        Parameters
+        ----------
+        event_file
+
+        Returns
+        -------
+        ch_name = self.raw.info['ch_names'][0]
+
+        events = pd.read_excel(event_file)
+
+        assert self.scoring, "R-peaks needs to be scored before they can be " \
+                             "matched"
+
+        rpeaks = self.scoring[ch_name]['rpeaks']
+        hr = np.divide(60,self.scoring[ch_name]['rri'])
+        events_onset = events.onset
+
+        rpeaks_events = np.zeros((len(events_onset),40))
+        for event_count,single_event_onset in enumerate(events_onset):
+            if len(np.argwhere(rpeaks>single_event_onset))>14:
+                if len(np.argwhere(rpeaks<single_event_onset)) >5:
+                    args_baseline = np.argwhere(rpeaks<single_event_onset)[-5:]
+                    args_after = np.argwhere(rpeaks>single_event_onset)[:15]
+                    rp_baseline = rpeaks[args_baseline].squeeze()
+                    IBI_baseline = hr[args_baseline].squeeze()
+                    rp_signal = rpeaks[args_after].squeeze()
+                    IBI_signal = hr[args_after].squeeze()
+                    rpeaks_events[event_count,:] = np.hstack([rp_baseline,
+                                                              rp_signal,
+                                                              IBI_baseline,
+                                                              IBI_signal])
+        IBI_labels = ['IBI_'+str(k) for k in np.arange(20)-5]
+        rpeaks_labels = ['RP_' + str(k) for k in np.arange(20)-5]
+
+        rp_dataframe = pd.DataFrame(rpeaks_events,columns=np.hstack([
+            rpeaks_labels,IBI_labels]
+        ))
+        rp_dataframe['label'] = events['label']
+        rp_dataframe['onset'] = events['onset']
+        self.scoring_events[ch_name] = rp_dataframe.to_dict(orient='list')
+        self.save_dict(self.scoring_events, self.path, score_type='HRVev')
+        """
