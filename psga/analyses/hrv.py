@@ -27,7 +27,6 @@ is not too big. A huge time windows suggest that there was a lot of rejected
 r-peaks (due to noise), and this event maybe should be excluded from your
 analysis.
 
-
 [1] Malik, M., Bigger, J. T., Camm, A. J., Kleiger, R. E., Malliani, A.,
 Moss, A. J., & Schwartz, P. J. (1996). Heart rate variability: Standards
 of measurement, physiological interpretation, and clinical use.
