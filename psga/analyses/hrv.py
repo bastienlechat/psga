@@ -1,3 +1,41 @@
+"""
+This modules performs heart-rate variability analyses. The QRS detector was
+developed in-house and tested on the MIT-BIT arrhythmia database from
+PhysioNet with a sensitivity of 97% (SD, 3.7%) and a specificity of 99% (SD,
+2%).
+
+This type of performance is averaged for a QRS detector, however other
+available detectors (such as the one in the MNE packages) tended to perform
+poorly in sleep data. My guess is that available algorithms assumes a constant
+ECG amplitude whereas ECG amplitude can shift during sleep (due to lose
+adherence of the sensors of the skin maybe?). The provided detectors was
+inspected visually on sleep data, and seemed to perform ok. A more thorough
+validation nevertheless remain to be performed.
+
+Summary values of the overnight heart rate variability are based on the
+previously published methodology in the European Heart Journal [1]. Furthemore, the
+R-peaks cleaning (ecto-beats) etc, follows what has been done in the
+[Multi-Ethnic Study of Atherosclerosis](https://sleepdata.org/datasets/mesa).
+
+This module also implements event analysis for heart rate (e.g. analysis of
+heart rate surges as a results of apnea events). This function reports
+the 5 beats before an event onsets and 15 beats after an event onsets. It
+reports both timing (in seconds) and heart rate values.
+Tips: it's important to check that timing windows (rpeaks[-5] to rpeaks[15])
+is not too big. A huge time windows suggest that there was a lot of rejected
+r-peaks (due to noise), and this event maybe should be excluded from your
+analysis.
+
+
+[1] Lechat, B., Scott, H., Naik, G. et al (2021). New and Emerging Approaches
+to Better Define Sleep Disruption and Its Consequences.
+Frontiers in Neuroscience, 15. doi:10.3389/fnins.2021.751730
+
+[2] Prerau, M. J., Brown, R. E., Bianchi, M. T., Ellenbogen, J. M., & Purdon,
+P. L. (2017). Sleep Neurophysiological Dynamics Through the Lens of
+Multitaper Spectral Analysis. Physiology (Bethesda), 32(1),
+60-92. doi:10.1152/physiol.00062.2015
+"""
 import os
 import mne
 import numpy as np
@@ -147,13 +185,28 @@ class HRV(BaseMethods):
 
     def score_from_events(self,events):
         """
+        Locates the 5 preceding and 15 following Rpeaks (both location and
+        respective HR values) from an event onset. This can be useful to
+        study heart rate surges to any type of events, such as apneas. This
+        was done recently in [1] (although they used photoplethysmography
+        derived HR instead of ECG).
 
         Parameters
         ----------
-        event_file
+        events : pd.DataFrame
 
         Returns
         -------
+        rp_dataframe : pd.Dataframe
+            Dataframe containing heart rate events scoring
+
+        References
+        ----------
+        [1] Azarbarzin, A., Sands, S. A., Younes, M., Taranto-Montemurro,
+        L., Sofer, T., Vena, D., . . . Wellman, A. (2021).
+        The Sleep Apnea-specific Pulse Rate Response Predicts
+        Cardiovascular Morbidity and Mortality.
+        Am J Respir Crit Care Med. doi:10.1164/rccm.202010-3900OC
         """
         ch_name = self._ECG_chan
         rpeaks = self._scoring[ch_name]['rpeaks']
@@ -277,12 +330,23 @@ def frequency_markers_rr(rpeaks,nni, psd_method='welch', psd_params = None,
 
 
 def noisy_interval(rpeaks,fs):
-    """ Calculate normal to normal interval from R-peaks.
+    """
+    Find noisy rpeaks. Noisy rpeaks is defined using either 1) improbable
+    heart rate values or 2) ecto-beats
 
-    steps:
-    1) get r to r interval
-    2) remove outlier rri (more than 100 bpm and less than 40 bpm)
-    3) remove ecto beats (see _ecto_beats)
+    Parameters
+    ----------
+    rpeaks : list
+        R-peaks locations
+    fs : int
+        Sampling frequency
+
+    Returns
+    -------
+    outlier_beat : list
+        Indexes of noisy beats
+    ecto_beat : list
+        Indexes of ecto beats
     """
     # Calculate r to r interval
     rri = np.diff(rpeaks) / fs
@@ -306,11 +370,33 @@ def noisy_interval(rpeaks,fs):
     return outlier_beat,ecto_beat
 
 def _outlier_rpeaks(rri, high_bpm=100, low_bpm=40):
+    """
+    Find and return arguments of rpeaks suspected to be outliers. Outlier
+    detection is based on a HR more than 100 or lower than 40.
+
+    Parameters
+    ----------
+    rri : list
+        list of r-r intervals
+    high_bpm : int
+        Upper bound of acceptable heart rate (default 100)
+    low_bpm : int
+        Lower bound of acceptable heart rate (default 20)
+
+    Returns
+    -------
+    clean : list
+        Locations of clean R-peaks
+    noisy : list
+        Locations of noisy R-peaks
+    """
     """Remove people with a heart rate less than 40 BPM and more than 100 BPM"""
     low_interval =  60 / high_bpm
     high_interval =  60 / low_bpm
     arg_noisy = np.bitwise_or(rri > high_interval, rri < low_interval)
-    return np.argwhere(~arg_noisy).ravel(), np.argwhere(arg_noisy).squeeze()
+    clean = np.argwhere(~arg_noisy).ravel()
+    noisy = np.argwhere(arg_noisy).squeeze()
+    return clean, noisy
 
 
 def _ecto_beat(rri):
@@ -329,8 +415,18 @@ def _ecto_beat(rri):
 def QRS_detection(sig, fs, verbose=None):
     """QRS detection algorithm.
 
-    This is a mix between mne:preprocessing:qrs function and techniques used here [1]
+    This is a mix between an the QRS function implemented
+    in MNE and the one implemented in this paper [1]. In-house validation
+    of the QRS detection algorithm on the MIT-BIT arrhythmia
+    database from PhysioNet yielded a sensitivity of 97% (SD, 3.7%)
+    and a specificity of 99% (SD, 2%).
 
+    References
+    ----------
+
+    [1] Kadambe, S., Murray, R., & Boudreaux-Bartels, G. F. (1999).
+    Wavelet transform-based QRS complex detector.
+    IEEE Trans Biomed Eng, 46(7), 838-848. doi:10.1109/10.771194
     """
     ecg = sig
     sample_rate = fs
