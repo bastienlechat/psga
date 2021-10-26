@@ -20,21 +20,21 @@ R-peaks cleaning (ecto-beats) etc, follows what has been done in the
 This module also implements event analysis for heart rate (e.g. analysis of
 heart rate surges as a results of apnea events). This function reports
 the 5 beats before an event onsets and 15 beats after an event onsets. It
-reports both timing (in seconds) and heart rate values.
+reports both timing (in seconds) and heart rate values. This methodology was
+used in a paper looking at the effect of environmental noise on sleep [2].
 Tips: it's important to check that timing windows (rpeaks[-5] to rpeaks[15])
 is not too big. A huge time windows suggest that there was a lot of rejected
 r-peaks (due to noise), and this event maybe should be excluded from your
 analysis.
 
 
-[1] Lechat, B., Scott, H., Naik, G. et al (2021). New and Emerging Approaches
-to Better Define Sleep Disruption and Its Consequences.
-Frontiers in Neuroscience, 15. doi:10.3389/fnins.2021.751730
+[1] Malik, M., Bigger, J. T., Camm, A. J., Kleiger, R. E., Malliani, A.,
+Moss, A. J., & Schwartz, P. J. (1996). Heart rate variability: Standards
+of measurement, physiological interpretation, and clinical use.
+European Heart Journal, 17(3), 354-381.
+doi:10.1093/oxfordjournals.eurheartj.a014868
 
-[2] Prerau, M. J., Brown, R. E., Bianchi, M. T., Ellenbogen, J. M., & Purdon,
-P. L. (2017). Sleep Neurophysiological Dynamics Through the Lens of
-Multitaper Spectral Analysis. Physiology (Bethesda), 32(1),
-60-92. doi:10.1152/physiol.00062.2015
+[2] TBA
 """
 import os
 import mne
