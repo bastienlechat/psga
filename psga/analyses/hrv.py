@@ -161,7 +161,7 @@ class HRV(BaseMethods):
                                 psd_params= self.psd_params,
                                 frequency_bands=self.frequency_bands,
                                 method='all'
-                                 )
+                                )
         vlf_5, lf_5, hf_5, lf_ratio_5, hf_ratio_5, total_power_5, noisy_epochs\
             = frequency_markers_rr(rp, rri,
                                 psd_method=self.psd_method,
@@ -267,20 +267,30 @@ def temporal_markers_rr(nni, rpeaks):
 def frequency_markers_rr(rpeaks,nni, psd_method='welch', psd_params = None,
                          frequency_bands = [0.003, 0.04, 0.15, 0.40],
                          method='five'):
-    """frequency markers of nn series
+    """Frequency metrics of normal-to-normal interval series
 
     steps:
     1) Interpolate to equally spaced time series
-    2) Calculate power spectrum density of nni inteprolated series and get absoulte power of very low (0.003, 0.04Hz)
+    2) Calculate power spectrum density of nni inteprolated series
+    and get absoulte power of very low (0.003, 0.04Hz)
     , low (0.04, 0.15), high freq (0.15, 0.40) frequency bands.
-    3) Calculate a few ratios and total powers
+    3) Calculate ratios and total powers
+
     Parameters
     ----------
-    rpeaks
-    nni
-    psd_method
-    psd_params
-    frequency_bands
+    rpeaks : list
+        locations of the rpeaks
+    nni : list
+        normal to normal interval series
+    psd_method : str
+        Methods used to calculate power spectral densities (default welch)
+    psd_params: dict
+        Additionnal params to pass to the welch function (dict with the
+        keys welch_n_fft and welch_n_overlap)
+    frequency_bands : list
+        Ultra-low frequency (0.003 to 0.04), low frequency (0.04 to 0.15) and
+        high frequency (0.15 to 0.40) bounds for calculation of frequency
+        characteristics of HRV. Default to [0.003,0.4,0.15,0.40]
 
     Returns
     -------
@@ -297,7 +307,7 @@ def frequency_markers_rr(rpeaks,nni, psd_method='welch', psd_params = None,
     if method == 'all':
         absol_power = compute_absol_pow_freq_bands(sfreq, nn_inter[None,], psd_method = psd_method,
                                                    psd_params=psd_params,
-                                                      freq_bands=frequency_bands).squeeze()
+                                                freq_bands=frequency_bands).squeeze()
         vlf, lf, hf = absol_power[0], absol_power[1], absol_power[2]
     elif method =='five':
         epochs_hr = []
