@@ -14,7 +14,6 @@ from .base import BaseMethods
 import sys
 import pandas as pd
 
-
 try:
     wd = sys._MEIPASS
 except AttributeError:
@@ -23,18 +22,54 @@ except AttributeError:
 class HRV(BaseMethods):
     """Performs heart rate variability analysis.
 
-    "score" function find R-peaks and calculate normal to normal beats interval (nni). "score_events" gives the
-    5 preceding and 15 following NNI from an event onset. Overnight metrics calculate usual heart rate variability
-    (see [1]) markers over the all overnight period. We also calculate some temporal markers of heart rate
-    variability for individual sleep stages (can not be done for frequency markers since it requires at least
+    "score" function find R-peaks and calculate normal to normal beats interval (nni).
+
+    "score_events" gives the 5 preceding and 15 following NNI from an event onset.
+
+    Overnight metrics calculate usual heart rate variability (see [1]) markers
+    over the all overnight period. We also calculate some temporal markers of
+    heart rate variability for individual sleep stages
+    (can not be done for frequency markers since it requires at least
     5 minutes of continuous NNI)
 
     Parameters
     ----------
 
-    """
+    welch_n_fft : int
+        Number of point on which to perform fft (default 2048)
 
-    #CONFIG_PATH = os.path.join(wd, 'hrv_params.yaml')
+    welch_n_overlap : int
+        Number of overlapping points between segments (default 1024)
+
+    frequency_bands : list
+        Ultra-low frequency (0.003 to 0.04), low frequency (0.04 to 0.15) and
+        high frequency (0.15 to 0.40) bounds for calculation of frequency
+        characteristics of HRV. Default to [0.003,0.4,0.15,0.40]
+
+    Notes
+    -----
+    Summary statistics for heart rate variability are based on the previously
+    published methodology in the European Heart Journal [1]. Furthemore, the
+    R-peaks cleaning (ecto-beats) etc, follows what has been done in the
+    [Multi-Ethnic Study of Atherosclerosis](
+    https://sleepdata.org/datasets/mesa/pages/hrv-analysis.md).
+
+    In-house validation of the QRS detection algorithm on the MIT-BIT arrhythmia
+    database from PhysioNet yielded a sensitivity of 97% (SD, 3.7%)
+    and a specificity of 99% (SD, 2%). The results were published in [2].
+
+    References
+    ----------
+
+    [1] Malik, M., Bigger, J. T., Camm, A. J., Kleiger, R. E., Malliani, A.,
+    Moss, A. J., & Schwartz, P. J. (1996). Heart rate variability: Standards
+    of measurement, physiological interpretation, and clinical use.
+    European Heart Journal, 17(3), 354-381.
+    doi:10.1093/oxfordjournals.eurheartj.a014868
+
+    [2] TBA
+
+    """
 
     def __init__(self, welch_n_fft = 2048, welch_n_overlap=1024,
                  frequency_bands = [0.003, 0.04, 0.15, 0.40]):
@@ -110,7 +145,7 @@ class HRV(BaseMethods):
                 'Noisy_rpeaks': np.sum(self._scoring[self._ECG_chan]['Noisy']),
                 'N_nni':len(self._scoring[self._ECG_chan]['Noisy'])}
 
-    def score_from_events(self,event_file):
+    def score_from_events(self,events):
         """
 
         Parameters
@@ -119,44 +154,36 @@ class HRV(BaseMethods):
 
         Returns
         -------
-        ch_name = self.raw.info['ch_names'][0]
-
-        events = pd.read_excel(event_file)
-
-        assert self.scoring, "R-peaks needs to be scored before they can be " \
-                             "matched"
-
-        rpeaks = self.scoring[ch_name]['rpeaks']
-        hr = np.divide(60,self.scoring[ch_name]['rri'])
+        """
+        ch_name = self._ECG_chan
+        rpeaks = self._scoring[ch_name]['rpeaks']
+        hr = np.divide(60, self._scoring[ch_name]['rri'])
         events_onset = events.onset
 
-        rpeaks_events = np.zeros((len(events_onset),40))
-        for event_count,single_event_onset in enumerate(events_onset):
-            if len(np.argwhere(rpeaks>single_event_onset))>14:
-                if len(np.argwhere(rpeaks<single_event_onset)) >5:
-                    args_baseline = np.argwhere(rpeaks<single_event_onset)[-5:]
-                    args_after = np.argwhere(rpeaks>single_event_onset)[:15]
+        rpeaks_events = np.zeros((len(events_onset), 40))
+        for event_count, single_event_onset in enumerate(events_onset):
+            if len(np.argwhere(rpeaks > single_event_onset)) > 14:
+                if len(np.argwhere(rpeaks < single_event_onset)) > 5:
+                    args_baseline = np.argwhere(rpeaks < single_event_onset)[
+                                    -5:]
+                    args_after = np.argwhere(rpeaks > single_event_onset)[:15]
                     rp_baseline = rpeaks[args_baseline].squeeze()
                     IBI_baseline = hr[args_baseline].squeeze()
                     rp_signal = rpeaks[args_after].squeeze()
                     IBI_signal = hr[args_after].squeeze()
-                    rpeaks_events[event_count,:] = np.hstack([rp_baseline,
-                                                              rp_signal,
-                                                              IBI_baseline,
-                                                              IBI_signal])
-        IBI_labels = ['IBI_'+str(k) for k in np.arange(20)-5]
-        rpeaks_labels = ['RP_' + str(k) for k in np.arange(20)-5]
+                    rpeaks_events[event_count, :] = np.hstack([rp_baseline,
+                                                               rp_signal,
+                                                               IBI_baseline,
+                                                               IBI_signal])
+        IBI_labels = ['IBI_' + str(k) for k in np.arange(20) - 5]
+        rpeaks_labels = ['RP_' + str(k) for k in np.arange(20) - 5]
 
-        rp_dataframe = pd.DataFrame(rpeaks_events,columns=np.hstack([
-            rpeaks_labels,IBI_labels]
+        rp_dataframe = pd.DataFrame(rpeaks_events, columns=np.hstack([
+            rpeaks_labels, IBI_labels]
         ))
         rp_dataframe['label'] = events['label']
         rp_dataframe['onset'] = events['onset']
-        self.scoring_events[ch_name] = rp_dataframe.to_dict(orient='list')
-        self.save_dict(self.scoring_events, self.path, score_type='HRVev')
-        """
-
-
+        return rp_dataframe
 
 def temporal_markers_rr(nni, rpeaks):
     """Time based metrics of normal to normal intervals"""
