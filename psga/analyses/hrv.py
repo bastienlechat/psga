@@ -263,7 +263,6 @@ def temporal_markers_rr(nni, rpeaks):
     return mean_nn, median_nn, nn_std, mean_hr, std_hr, rmssd, nni_50, \
            pnni_50, np.mean(mn), np.mean(sd)
 
-
 def frequency_markers_rr(rpeaks,nni, psd_method='welch', psd_params = None,
                          frequency_bands = [0.003, 0.04, 0.15, 0.40],
                          method='five'):
@@ -337,7 +336,6 @@ def frequency_markers_rr(rpeaks,nni, psd_method='welch', psd_params = None,
     total_power = vlf+lf+hf
     return vlf, lf, hf, ratio_lf, ratio_hf, total_power, noisy_epochs
 
-
 def noisy_interval(rpeaks,fs):
     """
     Find noisy rpeaks. Noisy rpeaks is defined using either 1) improbable
@@ -407,7 +405,6 @@ def _outlier_rpeaks(rri, high_bpm=100, low_bpm=40):
     noisy = np.argwhere(arg_noisy).squeeze()
     return clean, noisy
 
-
 def _ecto_beat(rri):
     """Remove Ectopic heartbeats, defined as a variation of more
     than 20% from previous r-r interval"""
@@ -419,7 +416,6 @@ def _ecto_beat(rri):
         else:
             normal_beat.append(count)
     return np.hstack(normal_beat),np.hstack(ecto_beat)
-
 
 def QRS_detection(sig, fs, verbose=None):
     """QRS detection algorithm.

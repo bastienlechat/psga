@@ -1,4 +1,4 @@
-#from .hrv import HRV
+from .hrv import HRV
 #from .flow import BB
 
 def check_is_fitted(estimator, attributes, *, msg=None, all_or_any=all):
@@ -44,18 +44,15 @@ def check_is_fitted(estimator, attributes, *, msg=None, all_or_any=all):
     if not attrs:
         raise ValueError(msg % {'name': type(estimator).__name__})
 
-
-"""
 def get_rpeaks(raw, hypno, ECG_chan, plot=False):
     hrv = HRV()
     hrv.fit(raw, hypno, ECG_chan=ECG_chan)
     scoring, _ = hrv.score(plot=plot)
     return scoring
 
-def get_breath_by_breath(raw, hypno, nasal_pressure):
-    bbyb = BB()
-    bbyb.fit(raw, hypno, nasal_pressure=nasal_pressure, flow_chan=None)
-    scoring, _ = bbyb.score()
+#def get_breath_by_breath(raw, hypno, nasal_pressure):
+#    bbyb = BB()
+#    bbyb.fit(raw, hypno, nasal_pressure=nasal_pressure, flow_chan=None)
+#    scoring, _ = bbyb.score()
 
-    return scoring[nasal_pressure]
-"""
+#    return scoring[nasal_pressure]
