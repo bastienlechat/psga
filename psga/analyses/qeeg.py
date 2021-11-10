@@ -16,7 +16,7 @@ experimental metrics, such as spectral entropy of delta activity across the
 night [2], are also implemented.
 
 The code below has been also used to analyse event-related changes in EEG.
-The following publications have used part of this code [3,4], and we refer
+The following publications have used part of this code [3,4,5,6], and we refer
 interested reader to this publication for further details on implementation
 technicals.
 
@@ -44,6 +44,11 @@ Predictors of Treatment Response to Cognitive Behavioral Therapy for
 Insomnia in Participants With Co-morbid Insomnia and Sleep Apnea:
 Secondary Analysis of a Randomized Controlled Trial.
 Frontiers in Psychology, 12. doi:10.3389/fpsyg.2021.676763
+
+[6] Dunbar, C., Catcheside, P., Lechat, B., Hansen, K., Zajamske, B.,
+Liebich, T., Nguyen, D.P., Scott, H., Lack, L., Decup, F., Vakulin, A.,
+Micic, G., EEG power spectral responses to wind farm compared to road
+traffic noise during sleep: A laboratory study. (in press) J Sleep Res,
 """
 
 import mne
