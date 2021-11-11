@@ -114,17 +114,17 @@ class HRV(BaseMethods):
         self.psd_params = {'welch_n_fft':welch_n_fft,
                            'welch_n_overlap':welch_n_overlap}
         self.frequency_bands = frequency_bands
+        self._ECG_chan = None #'ECG'
         super().__init__()
 
-    def fit(self, raw, hypnogram, ECG_chan=None):
-        assert (ECG_chan is not None or len(raw.info['ch_names']) == 0)
-        if ECG_chan is None: ECG_chan = raw.info['ch_names'][0]
-        self._ECG_chan = ECG_chan
+    def fit(self, raw, hypnogram, **kwargs):
+        assert (self._ECG_chan is not None or len(raw.info['ch_names']) == 0)
+        if self._ECG_chan is None: self._ECG_chan = raw.info['ch_names'][0]
         self._check_raw(raw)
         self._check_hypno(hypnogram)
 
         self.fs = raw.info['sfreq']
-        _ecg = raw[ECG_chan,:][0].squeeze() * 10 **3
+        _ecg = raw[self._ECG_chan,:][0].squeeze() * 10 **3
         self._ecg = mne.filter.filter_data(_ecg,self.fs,l_freq=1,
                                        h_freq=20, verbose='CRITICAL')
 

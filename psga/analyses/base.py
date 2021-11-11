@@ -10,7 +10,7 @@ class BaseMethods(object):
         self._scoring = {}
         self._epochs_data = {}
 
-    def fit(self, raw, hypnogram, picks=None,**kwargs):
+    def fit(self, raw, hypnogram, **kwargs):
         raise NotImplementedError
 
     def score(self, *args, **kwargs):
