@@ -129,9 +129,9 @@ class PWA(BaseMethods):
         psd_method = 'welch'
         psd_params = {'welch_n_fft': 2048, 'welch_n_overlap': 1024}
 
-        vlf, lf, hf, ratio_lf, ratio_hf, total_power = frequency_markers_rr(
+        vlf, lf, hf, ratio_lf, ratio_hf, total_power,_ = frequency_markers_rr(
             scoring['PWA_start'], scoring['PTT'],
-            psd_method=psd_method, psd_params=psd_params
+            psd_method=psd_method, psd_params=psd_params, method='all'
         )
 
         return {'vlf_ptt': vlf, 'lf_ptt': lf, 'hf_ptt': hf, 'lf_ratio_ptt':
@@ -159,11 +159,11 @@ class PWA(BaseMethods):
         """
         assert self._scoring, "R-peaks needs to be scored before they can be " \
                              "matched"
-
+        scoring = self._scoring[self._PWA_chan]
         events_onset = events.onset
-        onsets = np.asarray(self._scoring['PWA_start'])
-        ptt_values = np.asarray(self._scoring['PTT'])
-        pwa_values = np.asarray(self._scoring['PWA_max_amp'])
+        onsets = np.asarray(scoring['PWA_start'])
+        ptt_values = np.asarray(scoring['PTT'])
+        pwa_values = np.asarray(scoring['PWA_max_amp'])
 
         events_data = np.zeros((len(events_onset), 60))
         for event_count, single_event_onset in enumerate(events_onset):
