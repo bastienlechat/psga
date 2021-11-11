@@ -117,7 +117,7 @@ class HRV(BaseMethods):
         self._ECG_chan = None #'ECG'
         super().__init__()
 
-    def fit(self, raw, hypnogram, **kwargs):
+    def fit(self, raw, hypnogram):
         assert (self._ECG_chan is not None or len(raw.info['ch_names']) == 0)
         if self._ECG_chan is None: self._ECG_chan = raw.info['ch_names'][0]
         self._check_raw(raw)

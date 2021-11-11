@@ -175,10 +175,9 @@ class qEEG(BaseMethods):
             else:
                 warnings.warn(key + ' key is not a valid attribute')
 
-    def fit(self, raw, hypnogram, picks=None, **kwargs):
+    def fit(self, raw, hypnogram, picks=None):
         self._check_raw(raw)
         self._check_hypno(hypnogram)
-        #if kwargs: self.set_params(parameters_dict=kwargs, check_has_key=True)
         if picks is not None:
             raw = raw.pick_channels(ch_names=picks)
         self._raw = raw.filter(l_freq=0.3, h_freq=35, verbose='error')

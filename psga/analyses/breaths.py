@@ -34,7 +34,7 @@ class Breathing(BaseMethods):
     def __init__(self):
         super().__init__()
 
-    def fit(self, raw, hypnogram, nasal_pressure=None, flow_chan=None,**kwargs):
+    def fit(self, raw, hypnogram, nasal_pressure=None, flow_chan=None):
         self._check_raw(raw)
         self._check_hypno(hypnogram)
         self.np_ch_name = nasal_pressure

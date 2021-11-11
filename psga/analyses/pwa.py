@@ -38,7 +38,7 @@ class PWA(BaseMethods):
     def __init__(self):
         super().__init__()
 
-    def fit(self, raw, hypnogram, ECG_chan=None, PWA_chan=None,**kwargs):
+    def fit(self, raw, hypnogram, ECG_chan=None, PWA_chan=None):
         self._check_raw(raw)
         self._check_hypno(hypnogram)
         self._ECG_chan = ECG_chan
