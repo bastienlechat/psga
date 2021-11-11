@@ -340,8 +340,8 @@ def _score_qEEG(raw, Stages, channel, tmin=0, tmax=5, type='stage',
 def add_label_to_events(events, Stages):
     """
     This function label a sleep stages + ascending or descending phase for each events
-    :param onset_event: list of event onsets in SECONDE
-    :param Stages: dataframe containing 'onset' colunum, 'label' colunum and 'AD' colunum (ascending and descending slope) in SECONDE
+    :param onset_event: list of event onsets in sec
+    :param Stages: dataframe containing 'onset' colunum, 'label' colunum and
     :return: arguments of events contains within epochs and its label and type of slope
     """
     onset_stages = Stages['onset'].values
