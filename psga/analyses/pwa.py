@@ -26,9 +26,6 @@ class PWA(BaseMethods):
     the methods will store the 5 preceeding and 15 following PAT/PWA maximum
     and to the  event onset. For more information, please see [2]
 
-    Notes
-    -----
-
     References
     -----
     [1] Kwon Y, Wiles C, Parker BE, Clark BR, Sohn MW, Mariani S, et al.
@@ -36,7 +33,6 @@ class PWA(BaseMethods):
     the multi-ethnic study of atherosclerosis. Thorax. 2021.
 
     [2] TBA
-
     """
 
     def __init__(self):
@@ -129,11 +125,12 @@ class PWA(BaseMethods):
         variability. Please see :py:psga.hrv.frequency_markers
         """
         from .hrv import frequency_markers_rr
+        scoring = self._scoring[self._PWA_chan]
         psd_method = 'welch'
         psd_params = {'welch_n_fft': 2048, 'welch_n_overlap': 1024}
 
         vlf, lf, hf, ratio_lf, ratio_hf, total_power = frequency_markers_rr(
-            self._scoring['PWA_start'], self._scoring['PTT'],
+            scoring['PWA_start'], scoring['PTT'],
             psd_method=psd_method, psd_params=psd_params
         )
 
