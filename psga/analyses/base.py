@@ -5,12 +5,9 @@ import yaml
 
 class BaseMethods(object):
     """ Base class for each PSG analyses"""
-    CONFIG_PATH = None
 
-    #def __init__(self,raw,hypnogram, path, path_event):
     def __init__(self):
         pass
-        #assert self.CONFIG_PATH, 'Child class must override CONFIG_PATH'
 
     def fit(self, raw, hypnogram, picks=None,**kwargs):
         raise NotImplementedError
@@ -50,32 +47,3 @@ class BaseMethods(object):
         attr_public = {k:v for k,v in attr.items() if not k.startswith(
             '_') }
         return attr_public
-
-    def load_base_config(self):
-        if self.CONFIG_PATH is not ' ':
-            with open(self.CONFIG_PATH, 'r') as stream:
-                cfg = yaml.load(stream)
-            self.set_params(cfg)
-    """
-    def save_dict(self,data,path, score_type='n'):
-        if data:
-            with pd.ExcelWriter(path+score_type+'.xlsx') as writer:
-                for channel, items in data.items():
-                    try:
-                        df = pd.DataFrame.from_dict(items, orient='columns')
-
-                        df.to_excel(writer,
-                                    sheet_name=channel, index=False)
-                    except Exception as e:
-                        import numpy as np
-                        for name,item in items.items():
-                            print(name, np.shape(item))
-        else:
-            raise ValueError('object was not scored')
-    """
-    #@property
-    #def scoring(self):
-    #    return self.__scoring
-    #@property
-    #def scoring_events(self):
-    #    return self.__scoring_events
