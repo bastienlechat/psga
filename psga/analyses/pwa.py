@@ -2,13 +2,6 @@ import os
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.signal as signal
-import scipy.interpolate
-import pywt
-
-from psga.features.spectral_features import power_spectrum, \
-    compute_absol_pow_freq_bands
-from psga.features.time_features import compute_rms_value_epochs
 from .base import BaseMethods
 from .utils import get_rpeaks
 import sys
@@ -22,26 +15,27 @@ except AttributeError:
 class PWA(BaseMethods):
     """Performs analyses related to pulse wave amplitude signals.
 
-    Power spectrum analysis is computed on consecutive X ('windows_length') of
-    raw EEG in the 'score' methods. Mean absolute power of a given frequency
-    bands can then be calculated overnight and in specific sleep stage. More
-    experimental metrics on the delta frequency bands [1] are also implemented.
-    A full list of metrics calculated can be found in XX.
+    Maximum, minimum, beginning and end of each pulse wave amplitude waveform
+    is found using existing R-peaks from the ECG. The corresponding pulse
+    arrival time values (PAT; the delay between R-peaks and peripheral site)
+    is calculated using the maximum of second derivative of PWA as the
+    peripheral point, as done previously [1].
 
-    This class can also be used to perform analysis of qEEG relative to a
-    given events in the score_events methods. Given an event dataframe,
-    the methods will score qEEG relative to the event onset. For more
-    information, please see [2,3]
+    This class can also be used to perform analysis of PWA/PAT relative to a
+    given events in the score_events methods. Given an event onset,
+    the methods will store the 5 preceeding and 15 following PAT/PWA maximum
+    and to the  event onset. For more information, please see [2]
 
     Notes
     -----
 
     References
     -----
-    [1] Lechat, B., Hansen, K. L., Melaku, Y. A., Vakulin, A., Micic, G.,
-    Adams, R. J., . . . Zajamsek, B. (2021). A Novel EEG Derived Measure of
-    Disrupted Delta Wave Activity during Sleep Predicts All-Cause Mortality Risk.
-    Ann Am Thorac Soc, (in press). doi:10.1513/AnnalsATS.202103-315OC
+    [1] Kwon Y, Wiles C, Parker BE, Clark BR, Sohn MW, Mariani S, et al.
+    Pulse arrival time, a novel sleep cardiovascular marker:
+    the multi-ethnic study of atherosclerosis. Thorax. 2021.
+
+    [2] TBA
 
     """
 
@@ -59,6 +53,28 @@ class PWA(BaseMethods):
         self._pwa = raw[PWA_chan,:][0].squeeze()*10**3
 
     def score(self, plot = False):
+        """
+        Maximum, minimum, beginning and end of each pulse wave amplitude waveform
+        is found using existing R-peaks from the ECG. The corresponding pulse
+        arrival time values (PAT; the delay between R-peaks and peripheral site)
+        is calso calculated.
+
+        Parameters
+        ----------
+        plot : bool
+            If True, a summary plot of the detection will be plotted. Default is
+            False.
+
+        Returns
+        -------
+        scoring : dict
+            A dictionnary containing beginning, max, min and end values of
+            each PWA waveforms as well as the corresponding r-peaks locations
+            used for the analysis and the corresponding pulse arrival time
+            values.
+        epoch_data : dict
+            Empty dict, this is just for consistency across the "score" methods.
+        """
         self._scoring = {}
         self._epochs_data = {}
 
@@ -108,19 +124,16 @@ class PWA(BaseMethods):
 
     def overnight_metrics(self):
         """
-        Calculate overnight summary metrics of a pulse wave amplitude series.
-        This function
-
-        Returns
-        -------
-
+        Calculate overnight summary metrics of a pulse arrival time series.
+        This analysis is similar to frequency analysis of heart-rate
+        variability. Please see :py:psga.hrv.frequency_markers
         """
         from .hrv import frequency_markers_rr
         psd_method = 'welch'
         psd_params = {'welch_n_fft': 2048, 'welch_n_overlap': 1024}
 
         vlf, lf, hf, ratio_lf, ratio_hf, total_power = frequency_markers_rr(
-            self._scoring['PWA_start'], self._scoring['PTT']['ptt_value'],
+            self._scoring['PWA_start'], self._scoring['PTT'],
             psd_method=psd_method, psd_params=psd_params
         )
 
@@ -198,13 +211,18 @@ class PWA(BaseMethods):
 
         Parameters
         ----------
-        pleth :
-        rpeaks
-        sf
+        pleth : array
+            Pulse wave amplitude signal
+        rpeaks : list
+            Locations of R-peaks in the ECG
+        sf : int
+            Sampling frequency
 
         Returns
         -------
-
+        pleth_start, pleth_max, pleth_min, pleth_end : array (N)
+            Locations of the beginning, maximum, minimum and end values of
+            each pulse wave amplitude waveform. N waveform were detected.
         """
         # Get maximum of pulse wave
         max_pleth_arg = []
@@ -237,31 +255,38 @@ class PWA(BaseMethods):
         return np.hstack(pleth_start), max_pleth_arg[1:-1], \
                min_arg_pleth[1:], np.hstack(pleth_end)
 
-    def _get_ptt(self,pleth, rpeaks_list,sfreq):
+    def _get_ptt(self,pleth, rpeaks,sfreq):
         """
-        PAT:
-        1.	Kwon Y, Wiles C, Parker BE, Clark BR, Sohn MW, Mariani S, et al.
-        Pulse arrival time, a novel sleep cardiovascular marker:
-        the multi-ethnic study of atherosclerosis. Thorax. 2021.
+        Calculate pulse arrival time from a series of r-peaks and a pulse
+        wave amplitude series. The methods is described here [1].
 
-        from the article: The first differential of the PPG signal was filtered
-        using a 0.13 s
-         moving- average filter. The differential was repeated on the positive
-         values of the filtered signal, producing spikes in the second
-         derivative signal. Finally, the maximum value of the spikes
-         was determined as the PPG foot, and the time between the
-         R- wave peak and PPG foot was defined as PAT.
-
+        Briefly, the first differential of the PWA signal is filtered
+        using a 0.13 s moving- average filter. The differential is repeated
+        on the positive values of the filtered PWA signal. Finally, the maximum
+        value of the 2nd derivatives is determined, and the time between the
+        R-wave peak is calculated. This time difference is called PAT.
 
         Parameters
         ----------
-        rpeaks_list
-        sfreq
-        peripheral_point
+        pleth : ndarray
+            Pulse wave amplitude signal
+        rpeaks : list
+            locations of the rpeaks
+        sfreq : int
+            Sampling frequency
 
         Returns
         -------
+        times : array
+            Location of pulse arrival times (in sec)
+        pat : array
+            Corresponding pulse arrival time values
 
+        References
+        ----------
+        [1]	Kwon Y, Wiles C, Parker BE, Clark BR, Sohn MW, Mariani S, et al.
+        Pulse arrival time, a novel sleep cardiovascular marker:
+        the multi-ethnic study of atherosclerosis. Thorax. 2021.
         """
         from scipy.ndimage.filters import uniform_filter1d
         window_n = int(0.13*sfreq)
@@ -269,41 +294,21 @@ class PWA(BaseMethods):
         pleth_der_filtered = uniform_filter1d(pleth_der, size=window_n)
         pleth_der_filtered[pleth_der_filtered<0] = 0
         plethderder = np.diff(pleth_der_filtered)
-
         # Get maximum of 1st derivative of pulse wave
         max_derpleth_arg = []
-        for r1, r2 in zip(rpeaks_list[:-1], rpeaks_list[1:]):
+        for r1, r2 in zip(rpeaks[:-1], rpeaks[1:]):
             max_derpleth_arg.append(np.argmax(plethderder[r1:r2]) + r1)
         max_derpleth_arg = np.hstack(max_derpleth_arg)
-
-        ptt = []
+        # Calculate PAT values
+        pat = []
         times = []
-        for rpeaks in rpeaks_list:
-            if any(max_derpleth_arg>rpeaks):
+        for rp in rpeaks:
+            if any(max_derpleth_arg>rp):
                 args_pleth_point = max_derpleth_arg[
-                    rpeaks<max_derpleth_arg][0]
-                ptt.append((args_pleth_point-rpeaks)/sfreq)
-                times.append(rpeaks)
+                    rp<max_derpleth_arg][0]
+                pat.append((args_pleth_point-rp)/sfreq)
+                times.append(rp)
             else:
-                ptt.append(np.nan)
+                pat.append(np.nan)
                 times.append(np.nan)
-        return np.hstack(times),np.hstack(ptt)
-
-"""
-def frequency_markers_rr(rpeaks,nni, psd_method='welch', psd_params = None,
-                         frequency_bands = [0.003, 0.04, 0.15, 0.40]):
-    # Interpolation
-    sfreq = 4
-    t = rpeaks
-    f = scipy.interpolate.interp1d(t, nni, kind='quadratic')
-    t_inter = np.arange(t[0], t[-1], 1 / sfreq)
-    nn_inter = f(t_inter)
-    absol_power = compute_absol_pow_freq_bands(sfreq, nn_inter[None,], psd_method = psd_method,
-                                               psd_params=psd_params,
-                                                freq_bands=frequency_bands).squeeze()
-    vlf, lf, hf = absol_power[0], absol_power[1], absol_power[2]
-    ratio_lf = lf/(lf+hf)
-    ratio_hf = hf / (lf + hf)
-    total_power = vlf+lf+hf
-    return vlf, lf, hf, ratio_lf, ratio_hf, total_power
-"""
+        return np.hstack(times),np.hstack(pat)
