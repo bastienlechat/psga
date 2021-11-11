@@ -99,7 +99,7 @@ class qEEG(BaseMethods):
     This class can also be used to perform analysis of qEEG relative to a
     given events in the score_events methods. Given an event dataframe,
     the methods will score qEEG relative to the event onset. For more
-    information, please see [2,3]
+    information, please see [2,3].
 
     Parameters
     ----------
@@ -159,8 +159,6 @@ class qEEG(BaseMethods):
         self.events_lower_bound = events_lower_bound
         self.events_upper_bound = events_upper_bound
         super().__init__()
-        #self.load_base_config()
-        #if kwargs: self.set_params(kwargs, check_has_key=True)
 
     def set_params(self, parameters_dict, check_has_key=False):
         for key, value in parameters_dict.items():
@@ -199,8 +197,6 @@ class qEEG(BaseMethods):
         - zero crossing rate of each EEG epochs
         - Spectral entropy and Spectral edges (q =0.85 and 0.95)
         """
-        self._scoring = {}
-        self._epochs_data = {}
         check_is_fitted(self, ['_raw', '_hypno'])
         hypno = self._hypno
         raw = self._raw
@@ -281,12 +277,8 @@ class qEEG(BaseMethods):
 
         Parameters
         ----------
-        event_file : str
-        excel file containing event onset (in seconds), the label and duration of each events.
-
-        Notes
-        -----
-        The following parameters are calculated for each segments:
+        event_file : pd.Dataframe
+            Dataframe containing onset, duration and labels of events data.
         """
         hypno = self._hypno
         raw = self._raw

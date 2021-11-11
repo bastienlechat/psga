@@ -7,7 +7,8 @@ class BaseMethods(object):
     """ Base class for each PSG analyses"""
 
     def __init__(self):
-        pass
+        self._scoring = {}
+        self._epochs_data = {}
 
     def fit(self, raw, hypnogram, picks=None,**kwargs):
         raise NotImplementedError
