@@ -79,6 +79,7 @@ def read_psg_compumedics(folder,include = 'all',mne_output = True,
                             sf=512
                             ch_data.append(data)
         info = mne.create_info(ch_name, sfreq=sf)
+        info['meas_date'] = pg.start_date()
         raw = mne.io.RawArray(np.vstack(ch_data), info, verbose='error')
     else:
         raw = dtcdata
@@ -277,6 +278,14 @@ class PSGcompumedics(PSGbase):
                 lights_on = int(idx[-1])*int(self._epoch_length)
                 lights_off = int(idx[0]) * int(self._epoch_length)
         return (lights_off, lights_on)
+
+    def start_date(self):
+        import datetime
+        date = self.header['StartDate'] + ' ' + self.header['StartTime']
+        datetime_object = datetime.datetime.strptime(date,
+                                            '%d/%m/%Y %H:%M:%S')
+        datetime_object = datetime_object.replace(tzinfo=datetime.timezone.utc)
+        return datetime_object
 
     def info(self):
         print('-----------Compumedics Polysomnography ------------')
