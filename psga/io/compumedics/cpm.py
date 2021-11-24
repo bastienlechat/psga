@@ -169,10 +169,12 @@ class PSGcompumedics(PSGbase):
                         total_duration = starts[-1] + durs[-1]
                         array = np.zeros((int(ch_fs*(total_duration)),1)).squeeze()
                         prev = 0
-                        for start,stop in zip(starts,starts+durs):
+                        for (start,stop,du) in zip(starts,starts+durs,
+                                                   durs):
+                            end_data = prev + int(du*ch_fs)
                             array[int(start*ch_fs):int(stop*ch_fs)] = data[
-                                prev:int(stop*ch_fs)]
-                            prev = int(stop*ch_fs)
+                                prev:end_data]
+                            prev = prev + int(du*ch_fs)
                         data = array
                     montage[ch_name]['data'] = data
                 else:
