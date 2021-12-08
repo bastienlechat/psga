@@ -109,23 +109,23 @@ class HRV(BaseMethods):
     """
 
     def __init__(self, welch_n_fft = 2048, welch_n_overlap=1024,
-                 frequency_bands = [0.003, 0.04, 0.15, 0.40]):
+                 frequency_bands = [0.003, 0.04, 0.15, 0.40], ECG_chan='ECG'):
         self.psd_method = 'welch'
         self.psd_params = {'welch_n_fft':welch_n_fft,
                            'welch_n_overlap':welch_n_overlap}
         self.frequency_bands = frequency_bands
-        self._ECG_chan = None #'ECG'
+        self.ECG_chan = ECG_chan #'ECG'
         super().__init__()
 
     def fit(self, raw, hypnogram, ECG_chan=None):
-        if ECG_chan is not None: self._ECG_chan = ECG_chan
-        assert (self._ECG_chan is not None or len(raw.info['ch_names']) == 0)
-        if self._ECG_chan is None: self._ECG_chan = raw.info['ch_names'][0]
+        if ECG_chan is not None: self.ECG_chan = ECG_chan
+        if self.ECG_chan not in raw.info['ch_names']:
+            raise ValueError('{} is not a valid ECG channel.'.format(self.ECG_chan))
         self._check_raw(raw)
         self._check_hypno(hypnogram)
 
         self.fs = raw.info['sfreq']
-        _ecg = raw[self._ECG_chan,:][0].squeeze() * 10 **3
+        _ecg = raw[self.ECG_chan,:][0].squeeze() * 10 **3
         self._ecg = mne.filter.filter_data(_ecg,self.fs,l_freq=1,
                                        h_freq=20, verbose='CRITICAL')
 
@@ -145,16 +145,16 @@ class HRV(BaseMethods):
             plt.show()
         ecg_vals = np.hstack(ecg[rpeaks])
 
-        self._scoring[self._ECG_chan] = {'rpeaks':rpeaks/fs,'rri':rri,
+        self._scoring[self.ECG_chan] = {'rpeaks': rpeaks / fs, 'rri':rri,
                                  'Noisy':outliers,'Ecto_beat':ecto_beat,
                                 'rpeaksAmp':ecg_vals,
-                                 }
+                                        }
         return self._scoring, None
 
     def overnight_metrics(self):
-        noisy = self._scoring[self._ECG_chan]['Noisy']
-        rp = self._scoring[self._ECG_chan]['rpeaks'][noisy==0]
-        rri = self._scoring[self._ECG_chan]['rri'][noisy==0]
+        noisy = self._scoring[self.ECG_chan]['Noisy']
+        rp = self._scoring[self.ECG_chan]['rpeaks'][noisy == 0]
+        rri = self._scoring[self.ECG_chan]['rri'][noisy == 0]
 
         vlf, lf, hf, lf_ratio, hf_ratio, total_power, _ = \
             frequency_markers_rr(rp, rri,
@@ -180,8 +180,8 @@ class HRV(BaseMethods):
                 'mean_hr':mean_hr, 'std_HR':std_hr, 'rmssd':rmssd,
                 'nni_50':nni_50, 'pnni50':pnni_50,'std_5nn':std_5nn,
                 'std_sd5nn':std_sd5nn, 'Noisy_5min': int(noisy_epochs),
-                'Noisy_rpeaks': np.sum(self._scoring[self._ECG_chan]['Noisy']),
-                'N_nni':len(self._scoring[self._ECG_chan]['Noisy'])}
+                'Noisy_rpeaks': np.sum(self._scoring[self.ECG_chan]['Noisy']),
+                'N_nni':len(self._scoring[self.ECG_chan]['Noisy'])}
 
     def score_from_events(self,events):
         """
@@ -208,7 +208,7 @@ class HRV(BaseMethods):
         Cardiovascular Morbidity and Mortality.
         Am J Respir Crit Care Med. doi:10.1164/rccm.202010-3900OC
         """
-        ch_name = self._ECG_chan
+        ch_name = self.ECG_chan
         rpeaks = self._scoring[ch_name]['rpeaks']
         hr = np.divide(60, self._scoring[ch_name]['rri'])
         events_onset = events.onset

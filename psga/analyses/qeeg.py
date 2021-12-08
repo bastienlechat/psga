@@ -158,6 +158,7 @@ class qEEG(BaseMethods):
         self.events_windows_length = events_windows_length
         self.events_lower_bound = events_lower_bound
         self.events_upper_bound = events_upper_bound
+        self.picks=None
         super().__init__()
 
     def set_params(self, parameters_dict, check_has_key=False):
@@ -178,8 +179,8 @@ class qEEG(BaseMethods):
     def fit(self, raw, hypnogram, picks=None):
         self._check_raw(raw)
         self._check_hypno(hypnogram)
-        if picks is not None:
-            raw = raw.pick_channels(ch_names=picks)
+        if picks is not None: self._picks = picks
+        if self._picks is not None: raw = raw.pick_channels(ch_names=picks)
         self._raw = raw.filter(l_freq=0.3, h_freq=35, verbose='error')
         self._hypno = _convert_hypno(hypnogram, self.windows_length)
 

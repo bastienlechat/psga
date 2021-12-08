@@ -3,3 +3,4 @@
 from psga.analyses.qeeg import qEEG
 from .pwa import PWA
 from .hrv import HRV
+from .breaths import Breathing
