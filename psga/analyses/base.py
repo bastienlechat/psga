@@ -1,7 +1,6 @@
 import mne
 import pandas as pd
 import warnings
-import yaml
 
 class BaseMethods(object):
     """ Base class for each PSG analyses"""
@@ -28,7 +27,7 @@ class BaseMethods(object):
 
     def _check_hypno(self, hyp):
         if not isinstance(hyp,pd.DataFrame):
-            raise ValueError('raw must be a pd.DataFrame object, '
+            raise ValueError('raw must be a pd.DataFrame, '
                              'got a {}'.format(type(hyp)))
 
     def set_params(self, parameters_dict, check_has_key=False):
