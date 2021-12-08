@@ -104,7 +104,7 @@ class HRV(BaseMethods):
     European Heart Journal, 17(3), 354-381.
     doi:10.1093/oxfordjournals.eurheartj.a014868
 
-    [2] TBA
+    [2] TB
 
     """
 
