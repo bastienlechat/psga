@@ -240,12 +240,9 @@ class PSGcompumedics(PSGbase):
         from ..utils import lights_is_wrong
         lights_off, lights_on = self._find_lights_from_tech_notes()
         if lights_is_wrong(lights_off, lights_on):
-            lights_off, lights_on = self._find_lights_from_hypnogram()
-
-        if lights_is_wrong(lights_off, lights_on):
-            lights_off = 0
-            lights_on = int(self.data_segments[-1]['Start']) + \
-                            int(self.data_segments[-1]['Duration'])
+            if len(self._stages) > 0:
+                lights_on = len(self._stages) * int(self._epoch_length)
+                lights_off = 0
         return (lights_off, lights_on)
 
     def _find_lights_from_tech_notes(self):
@@ -270,15 +267,6 @@ class PSGcompumedics(PSGbase):
                               'LIGHTS ON.')
         else:
             warnings.warn('No tech form to infer lights on/off from.')
-        return (lights_off, lights_on)
-
-    def _find_lights_from_hypnogram(self):
-        lights_off, lights_on = (None,None)
-        if len(self._stages)>0:
-            idx = np.nonzero(np.isin(self._stages,[0,1,2,3,4,5]))[0]
-            if len(idx) > 0:
-                lights_on = int(idx[-1])*int(self._epoch_length)
-                lights_off = int(idx[0]) * int(self._epoch_length)
         return (lights_off, lights_on)
 
     def start_date(self):

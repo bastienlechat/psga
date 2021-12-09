@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import mne
 
 class Hypnogram(object):
 
@@ -59,3 +60,116 @@ def _convert_hypno(stages, windows_length):
     else:
         St = stages
     return St
+
+
+class AutomatedSleepStaging(object):
+    def __init__(self, raw, type='yasa'):
+        self.type = type
+        assert isinstance(raw, mne.io.BaseRaw)
+        self.raw = raw
+        self._automated_hyp = None
+
+    def score(self, **kwargs):
+        if self.type=='yasa':
+            assert 'EEG' in kwargs.keys()
+            assert 'EOG' in kwargs.keys()
+            assert 'EMG' in kwargs.keys()
+            hyp = self._yasa_score(EEG = kwargs['EEG'],
+                             EOG = kwargs['EOG'],
+                             EMG = kwargs['EMG'])
+            self._automated_hyp = hyp
+            return hyp
+        else:
+            raise NotImplementedError
+
+    def validate(self, true_stage):
+        """
+
+        Parameters
+        ----------
+        true_stage : np.array
+            Sleep staging to compare automatic scoring against (e.g. manual)
+
+        Returns
+        -------
+
+        """
+        pred = self._automated_hyp
+        true = true_stage
+
+        if len(true)>len(pred): # assume that something went wrong with the
+            # last epoch
+            true = true[:-1]
+
+        assert len(pred) == len(true)
+
+        from sklearn.metrics import classification_report, confusion_matrix, \
+                                ConfusionMatrixDisplay
+        import matplotlib.pyplot as plt
+        report = classification_report(true, pred, target_names=['Wake','N1',
+                                                              'N2','N3','REM'])
+
+        cm = confusion_matrix(true, pred)
+
+        ConfusionMatrixDisplay.from_predictions(true,pred, display_labels=[
+            'Wake','N1','N2','N3','REM'])
+        plt.show()
+        return report, cm
+
+
+    def _yasa_score(self, EEG, EOG, EMG, plot = True):
+        """
+        Small wrapper around yasa.SleepStaging class to automatically score
+        sleep stages. All credit goes to the original authors. See [1] for
+        more informations on the algorithm.
+
+        Parameters
+        ----------
+        EEG : str
+            Name of the EEG channel. Central (C3 or C4) recommended.
+        EOG : str
+            Name of the EOG location.
+        EMG : str
+            Name of the EMG location
+        plot : bool
+            If True, probability of each sleep stages will
+            be plotted as an hypnogram using
+            yasa.SleepStaging.plot_predict_proba(). Default set to False
+
+        Returns
+        -------
+        hypno : np.array
+            Array of automatically scored sleep stages*
+
+        References
+        ----------
+        [1] Vallat, R. & Walker, M. P. (2021). An open-source, high-performance
+        tool for automated sleep staging. Elife, 10.
+
+        Notes
+        -----
+        In YASA, sleep stages are labelled as W, N1, N2, N3 and R. We
+        replaced this label to 0,1,2,3,5 for compatibility with others
+        function in this package.
+        """
+
+        try:
+            import yasa
+        except:
+            raise ImportError('YASA must be installed')
+        sls = yasa.SleepStaging(self.raw, eeg_name=EEG, eog_name=EOG,
+                                emg_name=EMG,
+                                metadata=None)
+        hypno = sls.predict()
+        print(len(hypno))
+        hypno[hypno == 'W'] = 0
+        hypno[hypno == 'N1'] = 1
+        hypno[hypno == 'N2'] = 2
+        hypno[hypno == 'N3'] = 3
+        hypno[hypno == 'R'] = 5
+
+        if plot:
+            import matplotlib.pyplot as plt
+            sls.plot_predict_proba()
+            plt.show()
+        return np.asarray(hypno, dtype='int')

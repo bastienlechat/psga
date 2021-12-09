@@ -158,7 +158,7 @@ class qEEG(BaseMethods):
         self.events_windows_length = events_windows_length
         self.events_lower_bound = events_lower_bound
         self.events_upper_bound = events_upper_bound
-        self.picks=None
+        self.picks = None
         super().__init__()
 
     def set_params(self, parameters_dict, check_has_key=False):
@@ -179,8 +179,11 @@ class qEEG(BaseMethods):
     def fit(self, raw, hypnogram, picks=None):
         self._check_raw(raw)
         self._check_hypno(hypnogram)
-        if picks is not None: self._picks = picks
-        if self._picks is not None: raw = raw.pick_channels(ch_names=picks)
+        if picks is not None: self.picks = picks
+        if self.picks is not None:
+            raw = raw.pick_channels(ch_names=picks)
+        else:
+            raise ValueError('No EEG channel was selected for qEEG analysis.')
         self._raw = raw.filter(l_freq=0.3, h_freq=35, verbose='error')
         self._hypno = _convert_hypno(hypnogram, self.windows_length)
 
@@ -229,7 +232,7 @@ class qEEG(BaseMethods):
         for channel, qeeg_dict in scoring:
             df = pd.DataFrame.from_dict(qeeg_dict)
             st = df.loc[df.Max_Val < 400, :]
-            if -1 in np.unique(df.SleepStage.values):  is_scored = False
+            #if -1 in np.unique(df.SleepStage.values):  is_scored = False
             if not is_scored: kdftype = 'log'
             if is_scored:
                 # by individual sleep stage
@@ -265,7 +268,7 @@ class qEEG(BaseMethods):
             else:
                 raise NotImplementedError
             m = {**grpstaged, **features}
-            metrics[channel] = {channel + k: v for k, v in m.items()}
+            metrics = {**metrics,**{channel + k: v for k, v in m.items()}}
         return metrics
 
     def score_from_events(self, events):
