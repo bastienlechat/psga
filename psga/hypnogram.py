@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 import mne
 
+from sklearn.metrics import classification_report, confusion_matrix, \
+    ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
 class Hypnogram(object):
 
     def __init__(self, df,meas_date=None,
@@ -96,21 +100,13 @@ class AutomatedSleepStaging(object):
         """
         pred = self._automated_hyp
         true = true_stage
-
         if len(true)>len(pred): # assume that something went wrong with the
             # last epoch
             true = true[:-1]
-
         assert len(pred) == len(true)
-
-        from sklearn.metrics import classification_report, confusion_matrix, \
-                                ConfusionMatrixDisplay
-        import matplotlib.pyplot as plt
         report = classification_report(true, pred, target_names=['Wake','N1',
                                                               'N2','N3','REM'])
-
         cm = confusion_matrix(true, pred)
-
         ConfusionMatrixDisplay.from_predictions(true,pred, display_labels=[
             'Wake','N1','N2','N3','REM'])
         plt.show()
