@@ -6,7 +6,6 @@ from .breaths import Breathing
 from .hrv import HRV
 from .qeeg import qEEG
 
-ECG_PARAMS = {}
 qEEG_PARAMS = {'picks':['C3', 'C4','F3','F4','O1','O2'],
                'windows_length':5,
                'psd_method':'multitaper',
@@ -14,26 +13,13 @@ qEEG_PARAMS = {'picks':['C3', 'C4','F3','F4','O1','O2'],
                'events_lower_bound':-20,
                'events_upper_bound':20,
 }
-
+HRV_PARAMS = {}
 KC_PARAMS = {}
 BB_PARAMS = {}
-HRV_PARAMS = {}
+
 
 class Pipeline(object):
     """Create/run a pipeline of pre-defined sleep analysis steps.
-
-    Each analysis in the pipeline is a child of BaseMethods class (all
-    grouped in GMOOP.analysis).
-
-    The pipeline is constructed using a dict. Keys of the dict are the name
-    of the analysis step ('qeeg' for qEEG analysis) and a Step dataclass
-    container.
-
-    Step dataclass contains on which channels to perform the analysis (chs),
-    whether or not perform the analysis (analyse) and the actual analysis
-    methods.
-
-    #TODO: User input analysis step ?
 
     """
 
@@ -65,17 +51,14 @@ class Pipeline(object):
                 raise AttributeError('{} is not a valid analysis'.format(keys))
 
     def run(self, raw, hypno, events=None,
-             params_dict=None,path=None,
             ):
         """
 
         Parameters
         ----------
-        edf_file
-        hypnogram_file
-        event_file
-        params_dict
-        path
+        raw
+        hypno
+        events
 
         Returns
         -------
