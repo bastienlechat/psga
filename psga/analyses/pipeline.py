@@ -41,8 +41,9 @@ class Pipeline(object):
             params[name] = cls[0].get_params()
         return params
 
-    def fit_params(self,params_dict):
+    def fit_params(self,name,params_dict):
         """ iterates over analysis to set parameters"""
+        #self.pipeline[name][0].set_params(params_dict, check_has_key=True)
         for keys,params_analysis in params_dict.items():
             if keys in self.analysis_list:
                 self.pipeline[keys][0].set_params(params_dict[keys],

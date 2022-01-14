@@ -217,7 +217,6 @@ def _read_event(folder):
         code = [MAPPING_EVENT[code_num] for code_num in code.values]
         events['EVT_LABEL'] = code
     elif len(glob.glob(os.path.join(folder, '*.MDB'))) > 0:
-        print(glob.glob(os.path.join(folder, '*.MDB')))
         file = glob.glob(os.path.join(folder, '*.MDB'))[-1]
         warnings.warn('No .EDB files. Attempting to read events from .MDB file')
         events = read_MDB_event(file)
