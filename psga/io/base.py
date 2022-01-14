@@ -16,3 +16,8 @@ class PSGbase:
 
     def summary(self):
         raise NotImplementedError
+
+    def automatic_scoring(self, raw,
+                          EEG ='C3',EEG_REF='M2', EOG='EOG',
+                          EMG='EMG', algorithm='yasa'):
+        pass

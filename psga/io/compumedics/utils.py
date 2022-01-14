@@ -216,6 +216,14 @@ def _read_event(folder):
         code = events['EVT_CODE'].astype(int).astype("string")
         code = [MAPPING_EVENT[code_num] for code_num in code.values]
         events['EVT_LABEL'] = code
+    elif len(glob.glob(os.path.join(folder, '*.MDB'))) > 0:
+        print(glob.glob(os.path.join(folder, '*.MDB')))
+        file = glob.glob(os.path.join(folder, '*.MDB'))[-1]
+        warnings.warn('No .EDB files. Attempting to read events from .MDB file')
+        events = read_MDB_event(file)
+        code = events['EVT_CODE'].astype(int).astype("string")
+        code = [MAPPING_EVENT[code_num] for code_num in code.values]
+        events['EVT_LABEL'] = code
     else:
         raise NotImplementedError('Only .EDB are supported for event file')
 
@@ -340,6 +348,46 @@ def _read_sleep_stage(folder):
     hypno[hypno == 128] = 9
     hypno[hypno == 138] = 0
     return hypno
+
+def read_MDB_event(file):
+    """
+    Read the .MDB event file in a given compumedic folder.
+
+    Parameters
+    ----------
+
+    folder : str
+        Path of the compumedics folder
+
+    Returns
+    -------
+    eventsframe : pd.DataFrame
+        Dataframe containing events scoring
+    """
+    try:
+        import pyodbc
+    except ImportError:
+        raise ImportError('You need to install pyodbc to read .MDB files')
+
+    name_key = ['EVT_CODE', 'EVT_TIME', 'EVT_LENGTH',
+                'PARAM3','PARAM2', 'PARAM1','MAN_SCORED']
+
+    MDB = file
+    DRV = '{Microsoft Access Driver (*.mdb, *.accdb)}'
+    PWD = 'pw'
+    # connect to db
+    con = pyodbc.connect('DRIVER={};DBQ={};PWD={}'.format(DRV, MDB, PWD))
+    cur = con.cursor()
+    # run a query and get the results
+    SQL = 'SELECT * FROM ScoredEvents;'  # your query goes here
+    rows = cur.execute(SQL).fetchall()
+    cur.close()
+    con.close()
+    events = np.vstack(rows)
+    eventsframe = pd.DataFrame(data=events, columns=name_key)
+    return eventsframe
+
+
 
 
 def read_EDB_event(file):
