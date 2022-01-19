@@ -1,25 +1,15 @@
 # Polysomnography analysis (psga)
 
 This package is a collection of tools used at the Adelaide 
-Institute for Sleep Health for the analysis of polysomnography files. 
-Specifically, this packages can perform the following analyses:
-- Spectral power analysis of EEG (sometimes refered as quantitative EEG)
-- Analysis of pulse wave amplitude (and pulse arrival time) signals
-- R-peaks detection and heart rate variability analyses
-- K-complexes detection (TBA)
-- Breaths detection and ventilation summary metrics (TBA)
+Institute for Sleep Health for the analysis of polysomnography files.
 
-If you are after analyses not available in PSGA, 
-[YASA](https://raphaelvallat.com/yasa/build/html/index.html) is another 
-sleep EEG analysis package that may have the analysis you require.
-
-**WARNING**: PSGA is still a work in progress, use at your own risk.
+**WARNING**: PSGA is still a work in progress, use at your own risk. Consider using [YASA](https://raphaelvallat.com/yasa/build/html/index.html) for a more stable alternative.
 
 ---
 
 ## Getting started
 
-PSGA is not yet available on pip/conda. Our tools were developed in Python 3.7 
+The tools were developed in Python 3.7 
 and require the following dependencies: 
 [MNE](https://mne.tools/stable/index.html), [pandas](https://pandas.pydata.org/)
 and [scikit-learn](https://scikit-learn.org/stable/).
