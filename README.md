@@ -9,7 +9,7 @@ Institute for Sleep Health for the analysis of polysomnography files.
 
 ## Getting started
 
-PSGA is not yet available on pip/conda. Our tools were developed in Python 3.7 
+The tools were developed in Python 3.7 
 and require the following dependencies: 
 [MNE](https://mne.tools/stable/index.html), [pandas](https://pandas.pydata.org/)
 and [scikit-learn](https://scikit-learn.org/stable/).
