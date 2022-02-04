@@ -149,7 +149,8 @@ class KC(BaseMethods):
             ###################################
             ####    Calulate features      ####
             # organize event matrix for mne
-            onsets_int = np.array(kc_onsets * raw.info['sfreq'], dtype='int')
+            onsets_int = np.array(kc_onsets * raw.info['sfreq'], dtype='int')\
+                         + self._raw.first_samp
             events = np.vstack((onsets_int, np.ones_like(onsets_int),
                                 np.ones_like(onsets_int))).T
             # get epochs data
@@ -160,7 +161,6 @@ class KC(BaseMethods):
                                 verbose='critical', flat=None)
             times = epochs.times
             kc_matrix = epochs.get_data().squeeze() *-1 * 10 ** 6
-
             ###################################
             ###### Time-Feature calculations
             t_P900_N550, P900_timing, KC_900, KC_550, ptp_amp, slope = _temporal_features_kcs(
