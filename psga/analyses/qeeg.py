@@ -70,9 +70,8 @@ from psga.features.spectral_features import compute_absol_pow_freq_bands, \
     compute_hjorth_spect, compute_spect_entropy, \
     compute_spect_slope, compute_spect_edge_freq
 from psga.features.denoising_function import moving_average_weighted
-import yaml
 import sys
-import joblib
+
 try:
     wd = sys._MEIPASS
 except AttributeError:
