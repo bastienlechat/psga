@@ -384,7 +384,7 @@ def _kc_temporal_features_2d(time_data, Fs):
 ##########################################################################
 
 def scoring_algorithm_kc(raw, channel, stages, score_on_stages = [1,2,3], amplitude_threshold = 20e-6, distance = 2,
-                reject_epoch = 200e-6, probability_threshold = 0.5):
+                reject_epoch = 500e-6, probability_threshold = 0.5):
     """
     Score K-complexes according to [1]. Briefly, peaks superior to
     "amplitude_threshold" in the raw EEG are found, and  then classified
@@ -471,7 +471,7 @@ def scoring_algorithm_kc(raw, channel, stages, score_on_stages = [1,2,3], amplit
 ##########################################################################
 ##                      pre-processing functions                        ##
 ##########################################################################
-def scale_input(X, scaler = False):
+def scale_input(X, scaler = True):
     if scaler:
         scaler_filename = os.path.join(wd, 'scaler_final_A2.save')
         scaler = joblib.load(scaler_filename)
