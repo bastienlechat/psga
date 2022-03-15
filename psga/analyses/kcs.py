@@ -52,10 +52,8 @@ class KC(BaseMethods):
     def __init__(self, include_stages = 'all', **kwargs):
 
         super().__init__()
+        self._include_stages = include_stages
         if include_stages =='all': self._include_stages = [-1,0,1,2,3,4,5,9]
-        #self.load_base_config()
-        #if kwargs: self.set_params(kwargs, check_has_key=True)
-
         self._epochs_data = {}
         self._metadata = {}
         self._scoring = {}
@@ -472,7 +470,7 @@ def scoring_algorithm_kc(raw, channel, stages, score_on_stages = [1,2,3], amplit
 ##                      pre-processing functions                        ##
 ##########################################################################
 def scale_input(X, scaler = True):
-    scaler_filename = os.path.join(wd, 'scaler_final_A2.save')
+    scaler_filename = os.path.join(wd, 'model/scaler_final_A2.save')
     scaler = joblib.load(scaler_filename)
     X_scaled = scaler.transform(X)
     return X_scaled
