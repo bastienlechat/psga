@@ -65,7 +65,5 @@ class Pipeline(object):
         -------
 
         """
-        metrics = {}
-
-        return metrics
+        raise NotImplementedError
 
