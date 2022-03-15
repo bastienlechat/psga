@@ -13,6 +13,7 @@ qEEG_PARAMS = {'picks':['C3', 'C4','F3','F4','O1','O2'],
                'events_lower_bound':-20,
                'events_upper_bound':20,
 }
+
 HRV_PARAMS = {}
 KC_PARAMS = {}
 BB_PARAMS = {}
@@ -20,7 +21,6 @@ BB_PARAMS = {}
 
 class Pipeline(object):
     """Create/run a pipeline of pre-defined sleep analysis steps.
-
     """
 
     DEFAULT_PIPELINE = {

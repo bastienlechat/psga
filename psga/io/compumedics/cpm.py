@@ -90,7 +90,7 @@ def cpm_what_channels(folder):
     """Helper functions to print available channels given a folder with
     polysomnography files"""
     pg = PSGcompumedics(folder)
-    print(pg.available_channel)
+    return pg.available_channel
 
 class PSGcompumedics(PSGbase):
     """
